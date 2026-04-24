@@ -1,0 +1,36 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+  font-weight: 500;
+}
+
+.input {
+  height: 34px;
+  padding: 0 var(--space-3);
+  background: var(--bg-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-size: var(--text-base);
+  transition: border-color var(--transition-fast);
+}
+
+.input:hover {
+  border-color: var(--fg-3);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+.input::placeholder {
+  color: var(--fg-3);
+}
