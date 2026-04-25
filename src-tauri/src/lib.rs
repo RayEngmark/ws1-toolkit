@@ -3,7 +3,7 @@ mod commands;
 mod error;
 mod state;
 
-use commands::{app, connection, device, org_group, profile, smart_group, tag};
+use commands::{app, connection, device, org_group, profile, raw, smart_group, tag};
 use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -45,6 +45,8 @@ pub fn run() {
             smart_group::get_smart_group_devices,
             smart_group::add_devices_to_smart_group,
             smart_group::remove_devices_from_smart_group,
+            // Raw runner (Library tab)
+            raw::run_raw_endpoint,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
