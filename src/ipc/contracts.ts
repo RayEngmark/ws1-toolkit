@@ -24,6 +24,7 @@ export interface ConnectionInfo {
 
 export interface Device {
   id: number;
+  uuid: string;
   serialNumber: string;
   friendlyName: string;
   userName: string;
@@ -35,6 +36,11 @@ export interface Device {
   ownership: string;
   enrollmentStatus: string;
   ogName: string;
+  ogId: number;
+  macAddress: string;
+  imei: string;
+  assetNumber: string;
+  udid: string;
 }
 
 export interface DeviceSearchResult {
@@ -42,6 +48,28 @@ export interface DeviceSearchResult {
   page: number;
   pageSize: number;
   total: number;
+}
+
+// -- Resolved input (paste-list resolution) --
+
+export type IdentifierType =
+  | "serial"
+  | "username"
+  | "uuid"
+  | "imei"
+  | "macAddress"
+  | "assetTag"
+  | "friendlyName"
+  | "deviceId"
+  | "unknown";
+
+export interface ResolvedRow {
+  sourceLine: string;
+  detectedType: IdentifierType;
+  status: "resolved" | "notFound" | "ambiguous" | "pending";
+  device?: Device;
+  candidates?: Device[];
+  error?: string;
 }
 
 // -- Tag types --
@@ -63,7 +91,58 @@ export interface OrgGroup {
   children: OrgGroup[];
 }
 
-// -- Bulk action types --
+// -- Profile types --
+
+export interface Profile {
+  id: number;
+  name: string;
+  description: string;
+  platform: string;
+  profileType: string;
+  ogName: string;
+}
+
+// -- App types --
+
+export interface App {
+  id: number;
+  name: string;
+  bundleId: string;
+  version: string;
+  platform: string;
+  appType: "internal" | "public" | "purchased";
+  ogName: string;
+}
+
+// -- Smart Group types --
+
+export type SmartGroupCriteriaType = "All" | "UserDevice" | "None";
+
+export interface SmartGroup {
+  id: number;
+  name: string;
+  criteriaType: SmartGroupCriteriaType;
+  managedByOgId: number;
+  managedByOgName: string;
+  deviceCount: number;
+  appCount: number;
+  profileCount: number;
+}
+
+// -- App assignment payload (POST /api/mam/apps/internal/{id}/assignments) --
+
+export type AppPushMode = "Auto" | "OnDemand";
+
+export interface AppAssignmentPayload {
+  smartGroupIds: number[];
+  pushMode: AppPushMode;
+}
+
+// -- Profile assignment target --
+
+export type ProfileTarget = "devices" | "smartgroup";
+
+// -- Bulk action result --
 
 export interface BulkActionResult {
   total: number;

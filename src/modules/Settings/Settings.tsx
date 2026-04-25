@@ -1,17 +1,10 @@
-import { useEffect } from "react";
 import { useConnectionStore } from "../../state/connectionStore";
 import { useUIStore } from "../../state/uiStore";
-import { Button } from "../../components/shared/Button/Button";
-import { Input } from "../../components/shared/Input/Input";
 import styles from "./Settings.module.css";
 
 export function Settings() {
   const store = useConnectionStore();
   const addToast = useUIStore((s) => s.addToast);
-
-  useEffect(() => {
-    store.loadCredentials();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     await store.saveCredentials();
@@ -20,11 +13,8 @@ export function Settings() {
 
   const handleTest = async () => {
     const info = await store.testConnection();
-    if (info.connected) {
-      addToast("Connected successfully!", "success");
-    } else {
-      addToast(info.error ?? "Connection failed", "error");
-    }
+    if (info.connected) addToast("Connection OK", "success");
+    else addToast(info.error ?? "Connection failed", "error");
   };
 
   const handleClear = async () => {
@@ -35,123 +25,170 @@ export function Settings() {
   if (store.isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.card}>
-          <p className={styles.loadingText}>Loading credentials...</p>
-        </div>
+        <div className={styles.loading}>Loading credentials…</div>
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>Connection Settings</h2>
-          <p className={styles.subtitle}>
-            Configure your Workspace ONE UEM tenant connection
-          </p>
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>Connection</div>
+
+        <div className={styles.group}>
+          <div className={styles.groupHeader}>Tenant</div>
+          <Field label="URL">
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="https://tenant.awmdm.com"
+              value={store.tenantUrl}
+              onChange={(e) => store.setField("tenantUrl", e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </Field>
+          <Field label="API Key">
+            <input
+              className={styles.input}
+              type="password"
+              placeholder="aw-tenant-code"
+              value={store.apiKey}
+              onChange={(e) => store.setField("apiKey", e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </Field>
         </div>
 
-        <div className={styles.form}>
-          <Input
-            label="Tenant URL"
-            placeholder="https://your-tenant.awmdm.com"
-            value={store.tenantUrl}
-            onChange={(e) => store.setField("tenantUrl", e.target.value)}
-          />
-
-          <Input
-            label="API Key"
-            type="password"
-            placeholder="aw-tenant-code value"
-            value={store.apiKey}
-            onChange={(e) => store.setField("apiKey", e.target.value)}
-          />
-
-          <div className={styles.authToggle}>
-            <span className={styles.authLabel}>Authentication Mode</span>
-            <div className={styles.toggleGroup}>
+        <div className={styles.group}>
+          <div className={styles.groupHeader}>Authentication</div>
+          <Field label="Method">
+            <div className={styles.segmented}>
               <button
-                className={`${styles.toggleBtn} ${store.authMode === "basic" ? styles.toggleActive : ""}`}
+                type="button"
+                className={`${styles.segment} ${store.authMode === "basic" ? styles.segmentActive : ""}`}
                 onClick={() => store.setAuthMode("basic")}
               >
-                Basic Auth
+                Basic
               </button>
               <button
-                className={`${styles.toggleBtn} ${store.authMode === "oauth" ? styles.toggleActive : ""}`}
+                type="button"
+                className={`${styles.segment} ${store.authMode === "oauth" ? styles.segmentActive : ""}`}
                 onClick={() => store.setAuthMode("oauth")}
               >
                 OAuth 2.0
               </button>
             </div>
-          </div>
+          </Field>
 
           {store.authMode === "basic" ? (
-            <div className={styles.authFields}>
-              <Input
-                label="Username"
-                placeholder="admin@tenant.com"
-                value={store.username}
-                onChange={(e) => store.setField("username", e.target.value)}
-              />
-              <Input
-                label="Password"
-                type="password"
-                value={store.password}
-                onChange={(e) => store.setField("password", e.target.value)}
-              />
-            </div>
+            <>
+              <Field label="Username">
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="admin@tenant.com"
+                  value={store.username}
+                  onChange={(e) => store.setField("username", e.target.value)}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field label="Password">
+                <input
+                  className={styles.input}
+                  type="password"
+                  value={store.password}
+                  onChange={(e) => store.setField("password", e.target.value)}
+                  autoComplete="off"
+                />
+              </Field>
+            </>
           ) : (
-            <div className={styles.authFields}>
-              <Input
-                label="Token URL"
-                placeholder="https://na.uemauth.vmwservices.com/connect/token"
-                value={store.tokenUrl}
-                onChange={(e) => store.setField("tokenUrl", e.target.value)}
-              />
-              <Input
-                label="Client ID"
-                value={store.clientId}
-                onChange={(e) => store.setField("clientId", e.target.value)}
-              />
-              <Input
-                label="Client Secret"
-                type="password"
-                value={store.clientSecret}
-                onChange={(e) => store.setField("clientSecret", e.target.value)}
-              />
-            </div>
+            <>
+              <Field label="Token URL">
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="https://na.uemauth.vmwservices.com/connect/token"
+                  value={store.tokenUrl}
+                  onChange={(e) => store.setField("tokenUrl", e.target.value)}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field label="Client ID">
+                <input
+                  className={styles.input}
+                  type="text"
+                  value={store.clientId}
+                  onChange={(e) => store.setField("clientId", e.target.value)}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field label="Client Secret">
+                <input
+                  className={styles.input}
+                  type="password"
+                  value={store.clientSecret}
+                  onChange={(e) => store.setField("clientSecret", e.target.value)}
+                  autoComplete="off"
+                />
+              </Field>
+            </>
           )}
+        </div>
 
-          {store.connectionError && (
-            <div className={styles.errorBox}>
-              {store.connectionError}
-            </div>
-          )}
-
-          {store.isConnected && (
-            <div className={styles.successBox}>
-              Connected to {store.tenantUrl}
-            </div>
-          )}
-
-          <div className={styles.actions}>
-            <Button
-              variant="primary"
-              onClick={handleTest}
-              loading={store.isTesting}
-            >
-              Test Connection
-            </Button>
-            <Button onClick={handleSave} loading={store.isSaving}>
-              Save
-            </Button>
-            <Button variant="danger" onClick={handleClear}>
-              Clear
-            </Button>
+        {(store.connectionError || store.isConnected) && (
+          <div
+            className={`${styles.statusRow} ${store.isConnected ? styles.statusOk : styles.statusErr}`}
+          >
+            <span className={styles.statusLabel}>Status</span>
+            <span className={styles.statusValue}>
+              {store.isConnected
+                ? "Connected"
+                : store.connectionError ?? "Unknown error"}
+            </span>
           </div>
+        )}
+
+        <div className={styles.actions}>
+          <button
+            className={styles.actionPrimary}
+            onClick={handleTest}
+            disabled={store.isTesting || !store.tenantUrl || !store.apiKey}
+          >
+            {store.isTesting ? "Testing…" : "Test Connection"}
+          </button>
+          <button
+            className={styles.action}
+            onClick={handleSave}
+            disabled={store.isSaving || !store.tenantUrl || !store.apiKey}
+          >
+            {store.isSaving ? "Saving…" : "Save"}
+          </button>
+          <div className={styles.actionSpacer} />
+          <button className={styles.actionDanger} onClick={handleClear}>
+            Clear
+          </button>
+        </div>
+
+        <div className={styles.footerHint}>
+          Credentials are stored locally in your user profile. They are never sent
+          anywhere except directly to your WS1 tenant.
         </div>
       </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.fieldLabel}>{label}</label>
+      <div className={styles.fieldControl}>{children}</div>
     </div>
   );
 }

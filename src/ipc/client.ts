@@ -1,12 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
+import * as mock from "./mock";
 import type {
+  App,
+  AppPushMode,
   BulkActionResult,
   ConnectionInfo,
+  Device,
   DeviceSearchResult,
   OrgGroup,
+  Profile,
+  SmartGroup,
   Tag,
   WS1Config,
 } from "./contracts";
+
+const IS_TAURI =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 async function ipc<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   try {
@@ -18,77 +27,163 @@ async function ipc<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 
 // -- Connection --
 
-export function saveCredentials(config: WS1Config): Promise<void> {
-  return ipc("save_credentials", { config });
-}
+export const saveCredentials = (config: WS1Config): Promise<void> =>
+  IS_TAURI ? ipc("save_credentials", { config }) : mock.saveCredentials(config);
 
-export function loadCredentials(): Promise<WS1Config | null> {
-  return ipc("load_credentials");
-}
+export const loadCredentials = (): Promise<WS1Config | null> =>
+  IS_TAURI ? ipc("load_credentials") : mock.loadCredentials();
 
-export function testConnection(): Promise<ConnectionInfo> {
-  return ipc("test_connection");
-}
+export const testConnection = (): Promise<ConnectionInfo> =>
+  IS_TAURI ? ipc("test_connection") : mock.testConnection();
 
-export function clearCredentials(): Promise<void> {
-  return ipc("clear_credentials");
-}
+export const clearCredentials = (): Promise<void> =>
+  IS_TAURI ? ipc("clear_credentials") : mock.clearCredentials();
 
 // -- Devices --
 
-export function searchDevices(
+export const searchDevices = (
   query: string,
   searchBy: string,
   page: number,
   pageSize: number
-): Promise<DeviceSearchResult> {
-  return ipc("search_devices", { query, searchBy, page, pageSize });
-}
+): Promise<DeviceSearchResult> =>
+  IS_TAURI
+    ? ipc("search_devices", { query, searchBy, page, pageSize })
+    : mock.searchDevices(query, searchBy, page, pageSize);
 
-export function getDeviceTags(deviceId: number): Promise<Tag[]> {
-  return ipc("get_device_tags", { deviceId });
-}
+export const getDeviceTags = (deviceId: number): Promise<Tag[]> =>
+  IS_TAURI ? ipc("get_device_tags", { deviceId }) : mock.getDeviceTags(deviceId);
 
 // -- Tags --
 
-export function getTags(ogId: number): Promise<Tag[]> {
-  return ipc("get_tags", { ogId });
-}
+export const getTags = (ogId: number): Promise<Tag[]> =>
+  IS_TAURI ? ipc("get_tags", { ogId }) : mock.getTags(ogId);
 
-export function addTagsToDevices(
+export const addTagsToDevices = (
   tagId: number,
   deviceIds: number[]
-): Promise<BulkActionResult> {
-  return ipc("add_tags_to_devices", { tagId, deviceIds });
-}
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("add_tags_to_devices", { tagId, deviceIds })
+    : mock.addTagsToDevices(tagId, deviceIds);
 
-export function removeTagsFromDevices(
+export const removeTagsFromDevices = (
   tagId: number,
   deviceIds: number[]
-): Promise<BulkActionResult> {
-  return ipc("remove_tags_from_devices", { tagId, deviceIds });
-}
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("remove_tags_from_devices", { tagId, deviceIds })
+    : mock.removeTagsFromDevices(tagId, deviceIds);
+
+export const createTag = (name: string, ogId: number): Promise<Tag> =>
+  IS_TAURI ? ipc("create_tag", { name, ogId }) : mock.createTag(name, ogId);
 
 // -- Organization Groups --
 
-export function searchOrgGroups(): Promise<OrgGroup[]> {
-  return ipc("search_org_groups");
-}
+export const searchOrgGroups = (): Promise<OrgGroup[]> =>
+  IS_TAURI ? ipc("search_org_groups") : mock.searchOrgGroups();
 
-export function getOgChildren(ogId: number): Promise<OrgGroup[]> {
-  return ipc("get_og_children", { ogId });
-}
+export const getOgChildren = (ogId: number): Promise<OrgGroup[]> =>
+  IS_TAURI ? ipc("get_og_children", { ogId }) : mock.getOgChildren(ogId);
 
-export function moveDeviceToOg(
+export const moveDeviceToOg = (
   deviceId: number,
   targetOgId: number
-): Promise<void> {
-  return ipc("move_device_to_og", { deviceId, targetOgId });
-}
+): Promise<void> =>
+  IS_TAURI
+    ? ipc("move_device_to_og", { deviceId, targetOgId })
+    : mock.moveDeviceToOg();
 
-export function bulkMoveDevices(
+export const bulkMoveDevices = (
   deviceIds: number[],
   targetOgId: number
-): Promise<BulkActionResult> {
-  return ipc("bulk_move_devices", { deviceIds, targetOgId });
-}
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("bulk_move_devices", { deviceIds, targetOgId })
+    : mock.bulkMoveDevices(deviceIds, targetOgId);
+
+// -- Profiles --
+
+export const getProfiles = (): Promise<Profile[]> =>
+  IS_TAURI ? ipc("get_profiles") : mock.getProfiles();
+
+export const assignProfile = (
+  profileId: number,
+  deviceIds: number[]
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("assign_profile", { profileId, deviceIds })
+    : mock.assignProfile(profileId, deviceIds);
+
+// -- Apps --
+
+export const getApps = (): Promise<App[]> =>
+  IS_TAURI ? ipc("get_apps") : mock.getApps();
+
+/**
+ * Assign an internal app to one or more smart groups.
+ * Wraps `POST /api/mam/apps/internal/{appId}/assignments`
+ * with body `{"SmartGroupIds":[...], "DeploymentParameters":{"PushMode":"Auto|OnDemand"}}`.
+ * WS1 has no direct device-targeting endpoint for app assignment.
+ */
+export const assignAppToSmartGroup = (
+  appId: number,
+  smartGroupIds: number[],
+  pushMode: AppPushMode
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("assign_app_to_smart_group", { appId, smartGroupIds, pushMode })
+    : mock.assignAppToSmartGroup(appId, smartGroupIds, pushMode);
+
+// -- Profile install/remove (per-device, via SerialNumber) --
+
+/**
+ * Install profile on one or more devices using their serial numbers.
+ * Wraps repeated `POST /api/mdm/profiles/{profileId}/install` with `{"SerialNumber": "..."}`.
+ */
+export const installProfileOnDevices = (
+  profileId: number,
+  serialNumbers: string[]
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("install_profile_on_devices", { profileId, serialNumbers })
+    : mock.installProfileOnDevices(profileId, serialNumbers);
+
+export const removeProfileFromDevices = (
+  profileId: number,
+  serialNumbers: string[]
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("remove_profile_from_devices", { profileId, serialNumbers })
+    : mock.removeProfileFromDevices(profileId, serialNumbers);
+
+// -- Smart Groups --
+
+export const searchSmartGroups = (): Promise<SmartGroup[]> =>
+  IS_TAURI ? ipc("search_smart_groups") : mock.searchSmartGroups();
+
+export const getSmartGroup = (id: number): Promise<SmartGroup | null> =>
+  IS_TAURI ? ipc("get_smart_group", { id }) : mock.getSmartGroup(id);
+
+export const getSmartGroupDevices = (id: number): Promise<Device[]> =>
+  IS_TAURI ? ipc("get_smart_group_devices", { id }) : mock.getSmartGroupDevices(id);
+
+/**
+ * Add devices to a smart group via `POST /api/mdm/smartgroups/{id}/update`
+ * with body `{"DeviceAdditions":[{"Id":"..."}]}`.
+ */
+export const addDevicesToSmartGroup = (
+  smartGroupId: number,
+  deviceIds: number[]
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("add_devices_to_smart_group", { smartGroupId, deviceIds })
+    : mock.addDevicesToSmartGroup(smartGroupId, deviceIds);
+
+export const removeDevicesFromSmartGroup = (
+  smartGroupId: number,
+  deviceIds: number[]
+): Promise<BulkActionResult> =>
+  IS_TAURI
+    ? ipc("remove_devices_from_smart_group", { smartGroupId, deviceIds })
+    : mock.removeDevicesFromSmartGroup(smartGroupId, deviceIds);

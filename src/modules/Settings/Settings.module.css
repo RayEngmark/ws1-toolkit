@@ -1,131 +1,223 @@
 .container {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: var(--space-10);
-  min-height: 100%;
-}
-
-.card {
-  width: 100%;
-  max-width: 560px;
-  background: var(--bg-2);
-  border: var(--border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
-
-.header {
-  padding: var(--space-6);
-  border-bottom: var(--border);
-}
-
-.title {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  color: var(--fg-0);
-  margin-bottom: var(--space-1);
-}
-
-.subtitle {
-  font-size: var(--text-sm);
-  color: var(--fg-2);
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-6);
-}
-
-.authToggle {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.authLabel {
-  font-size: var(--text-sm);
-  color: var(--fg-2);
-  font-weight: 500;
-}
-
-.toggleGroup {
-  display: flex;
-  gap: 0;
-  border: var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.toggleBtn {
   flex: 1;
-  height: 34px;
-  background: var(--bg-1);
-  border: none;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--bg-0);
+}
+
+.loading {
   color: var(--fg-2);
-  font-size: var(--text-sm);
+  font-size: 12px;
+  padding: 40px;
+}
+
+.panel {
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.panelHeader {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-1);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+.group {
+  padding: 8px 14px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.group:last-of-type {
+  border-bottom: none;
+}
+
+.groupHeader {
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 0 8px;
   font-weight: 500;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 0;
+  min-height: 28px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  color: var(--fg-1);
+  user-select: none;
+}
+
+.fieldControl {
+  display: flex;
+}
+
+.input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  color: var(--fg-0);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-0);
+}
+
+.segment {
+  padding: 0 14px;
+  height: 22px;
+  font-size: 12px;
+  color: var(--fg-1);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
-.toggleBtn:first-child {
-  border-right: var(--border);
-}
-
-.toggleBtn:hover {
+.segment:hover:not(.segmentActive) {
   background: var(--bg-3);
   color: var(--fg-0);
 }
 
-.toggleActive {
-  background: var(--accent-dim);
-  color: var(--accent-hover);
+.segment + .segment {
+  border-left: 1px solid var(--border);
 }
 
-.toggleActive:hover {
+.segmentActive {
   background: var(--accent-dim);
-  color: var(--accent-hover);
+  color: var(--fg-0);
 }
 
-.authFields {
+.statusRow {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  background: var(--bg-1);
-  border-radius: var(--radius-md);
-  border: var(--border);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
-.errorBox {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--danger-dim);
-  color: var(--danger);
-  font-size: var(--text-sm);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+.statusLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-2);
 }
 
-.successBox {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--success-dim);
+.statusValue {
+  font-family: var(--font-mono);
+  flex: 1;
+}
+
+.statusOk .statusValue {
   color: var(--success);
-  font-size: var(--text-sm);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.statusErr {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.statusErr .statusValue {
+  color: var(--danger);
 }
 
 .actions {
   display: flex;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-.loadingText {
-  padding: var(--space-8);
-  text-align: center;
+.actionSpacer {
+  flex: 1;
+}
+
+.action,
+.actionPrimary,
+.actionDanger {
+  padding: 0 14px;
+  height: 24px;
+  font-size: 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action {
+  background: var(--bg-3);
+  color: var(--fg-0);
+  border: 1px solid var(--border-strong);
+}
+
+.action:hover:not(:disabled) {
+  background: var(--bg-4);
+}
+
+.actionPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+}
+
+.actionPrimary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 90%, #000);
+}
+
+.actionDanger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid transparent;
+}
+
+.actionDanger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.action:disabled,
+.actionPrimary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.footerHint {
+  padding: 10px 14px;
+  font-size: 11px;
   color: var(--fg-2);
+  line-height: 1.5;
 }

@@ -1,11 +1,30 @@
-.shell {
+.body {
+  flex: 1;
   display: flex;
-  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
 .main {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   background: var(--bg-0);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
 }

@@ -1,6 +1,16 @@
 import { create } from "zustand";
 
-export type Module = "settings" | "devices" | "tagger" | "ogmover";
+export type Module =
+  | "settings"
+  | "tag-devices"
+  | "move-devices"
+  | "assign-profile"
+  | "assign-app"
+  | "add-to-sg"
+  | "remove-from-sg"
+  | "lookup-sg"
+  | "lookup-device"
+  | "create-tag";
 
 export interface Toast {
   id: number;
@@ -27,10 +37,9 @@ export const useUIStore = create<UIState>((set) => ({
   addToast: (message, type) => {
     const id = ++toastId;
     set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 5000);
+    }, 4500);
   },
 
   dismissToast: (id) =>

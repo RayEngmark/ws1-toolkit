@@ -171,6 +171,145 @@ impl From<OGEntry> for OrgGroup {
     }
 }
 
+// -- Profile types --
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ProfileSearchResponse {
+    pub profiles: Option<Vec<ProfileEntry>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ProfileEntry {
+    pub id: Option<IdValue>,
+    pub profile_name: Option<String>,
+    pub profile_type: Option<String>,
+    pub platform: Option<String>,
+    pub description: Option<String>,
+    pub location_group_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Profile {
+    pub id: i64,
+    pub name: String,
+    pub description: String,
+    pub platform: String,
+    pub profile_type: String,
+    pub og_name: String,
+}
+
+impl From<ProfileEntry> for Profile {
+    fn from(p: ProfileEntry) -> Self {
+        Self {
+            id: p.id.and_then(|id| id.value).unwrap_or(0),
+            name: p.profile_name.unwrap_or_default(),
+            description: p.description.unwrap_or_default(),
+            platform: p.platform.unwrap_or_default(),
+            profile_type: p.profile_type.unwrap_or_default(),
+            og_name: p.location_group_name.unwrap_or_default(),
+        }
+    }
+}
+
+// -- App types (MAM) --
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct AppSearchResponse {
+    pub application: Option<Vec<AppEntry>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct AppEntry {
+    pub id: Option<IdValue>,
+    pub application_name: Option<String>,
+    pub bundle_id: Option<String>,
+    pub app_version: Option<String>,
+    pub platform: Option<String>,
+    pub app_type: Option<String>,
+    pub location_group_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct App {
+    pub id: i64,
+    pub name: String,
+    pub bundle_id: String,
+    pub version: String,
+    pub platform: String,
+    pub app_type: String,
+    pub og_name: String,
+}
+
+impl From<AppEntry> for App {
+    fn from(a: AppEntry) -> Self {
+        Self {
+            id: a.id.and_then(|id| id.value).unwrap_or(0),
+            name: a.application_name.unwrap_or_default(),
+            bundle_id: a.bundle_id.unwrap_or_default(),
+            version: a.app_version.unwrap_or_default(),
+            platform: a.platform.unwrap_or_default(),
+            app_type: a.app_type.unwrap_or_default(),
+            og_name: a.location_group_name.unwrap_or_default(),
+        }
+    }
+}
+
+// -- Smart Group types --
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct SmartGroupSearchResponse {
+    pub smart_groups: Option<Vec<SmartGroupEntry>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct SmartGroupEntry {
+    #[serde(rename = "SmartGroupID")]
+    pub smart_group_id: Option<i64>,
+    pub name: Option<String>,
+    pub criteria_type: Option<String>,
+    pub managed_by_organization_group_id: Option<i64>,
+    pub managed_by_organization_group_name: Option<String>,
+    pub device_count: Option<i32>,
+    pub apps_count: Option<i32>,
+    pub profiles_count: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmartGroup {
+    pub id: i64,
+    pub name: String,
+    pub criteria_type: String,
+    pub managed_by_og_id: i64,
+    pub managed_by_og_name: String,
+    pub device_count: i32,
+    pub app_count: i32,
+    pub profile_count: i32,
+}
+
+impl From<SmartGroupEntry> for SmartGroup {
+    fn from(s: SmartGroupEntry) -> Self {
+        Self {
+            id: s.smart_group_id.unwrap_or(0),
+            name: s.name.unwrap_or_default(),
+            criteria_type: s.criteria_type.unwrap_or_else(|| "None".into()),
+            managed_by_og_id: s.managed_by_organization_group_id.unwrap_or(0),
+            managed_by_og_name: s.managed_by_organization_group_name.unwrap_or_default(),
+            device_count: s.device_count.unwrap_or(0),
+            app_count: s.apps_count.unwrap_or(0),
+            profile_count: s.profiles_count.unwrap_or(0),
+        }
+    }
+}
+
 // -- Bulk action types --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

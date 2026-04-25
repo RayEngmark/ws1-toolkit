@@ -1,0 +1,68 @@
+.toolbar {
+  height: var(--toolbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 2px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brand {
+  padding: 0 10px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg-1);
+  text-transform: uppercase;
+}
+
+.sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.selectionHint {
+  font-size: 11px;
+  color: var(--fg-1);
+  padding: 0 10px;
+}
+
+.button {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-1);
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+
+.button:active {
+  background: var(--bg-4);
+}
+
+.button.active {
+  background: var(--bg-3);
+  color: var(--accent);
+  border-color: var(--border-strong);
+}
+
+.button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

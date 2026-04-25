@@ -1,0 +1,44 @@
+.bar {
+  height: var(--statusbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 10px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--fg-1);
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.segment {
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--border);
+  padding-left: 10px;
+  margin-left: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.status {
+  font-weight: 500;
+}
+
+.status.connected {
+  color: var(--success);
+}
+
+.status.disconnected {
+  color: var(--fg-2);
+}
