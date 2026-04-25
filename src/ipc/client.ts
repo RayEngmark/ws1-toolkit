@@ -221,3 +221,22 @@ export const runRawEndpoint = (req: RawRequest): Promise<RawResponse> =>
   IS_TAURI
     ? ipc("run_raw_endpoint", { request: req })
     : mock.runRawEndpoint(req);
+
+export interface SpecFetchResult {
+  sourceUrl: string;
+  spec: unknown;
+}
+
+/**
+ * Try to fetch the WS1 MDM API V1 Swagger / OpenAPI spec from the connected
+ * tenant. Pass an optional custom URL to override auto-discovery.
+ */
+export const fetchApiSpec = (
+  customUrl?: string
+): Promise<SpecFetchResult> =>
+  IS_TAURI
+    ? ipc("fetch_api_spec", { customUrl: customUrl ?? null }).then((r: any) => ({
+        sourceUrl: r.sourcePath ?? r.source_url ?? "",
+        spec: r.spec,
+      }))
+    : mock.fetchApiSpec(customUrl);

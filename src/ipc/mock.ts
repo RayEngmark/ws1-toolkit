@@ -258,9 +258,9 @@ export async function loadCredentials(): Promise<WS1Config | null> {
   return {
     tenantUrl: "https://as135.awmdm.com",
     apiKey: "••••••••••••••••",
-    authMode: "basic",
-    username: "admin@acmecorp.com",
-    password: "••••••••",
+    clientId: "mock-client-id",
+    clientSecret: "••••••••",
+    tokenUrl: "https://example.uemauth.example.com/connect/token",
   };
 }
 
@@ -487,7 +487,6 @@ export async function runRawEndpoint(req: {
   body?: unknown;
 }): Promise<{ ok: boolean; status: number; body: unknown }> {
   await new Promise((r) => setTimeout(r, 300));
-  // Mock: echo the request shape with a fake-success response shape.
   return {
     ok: true,
     status: 200,
@@ -495,6 +494,35 @@ export async function runRawEndpoint(req: {
       _mock: true,
       message: "Mock response — wire the Rust runner to call against your real tenant.",
       request: req,
+    },
+  };
+}
+
+export async function fetchApiSpec(
+  _customUrl?: string
+): Promise<{ sourceUrl: string; spec: unknown }> {
+  await new Promise((r) => setTimeout(r, 250));
+  // Tiny mock spec so the importer flow can be exercised in browser-only mode.
+  return {
+    sourceUrl: "https://mock.tenant/api/help/Docs/v1/MDM%20API%20V1",
+    spec: {
+      swagger: "2.0",
+      basePath: "/api/mdm",
+      paths: {
+        "/devices/search": {
+          get: {
+            tags: ["Devices"],
+            summary: "Search devices (mock)",
+            description: "Mock device search endpoint",
+          },
+        },
+        "/tags/addtag": {
+          post: {
+            tags: ["Tags"],
+            summary: "Add a new tag (mock)",
+          },
+        },
+      },
     },
   };
 }

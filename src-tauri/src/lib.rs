@@ -45,8 +45,9 @@ pub fn run() {
             smart_group::get_smart_group_devices,
             smart_group::add_devices_to_smart_group,
             smart_group::remove_devices_from_smart_group,
-            // Raw runner (Library tab)
+            // Raw runner (Library tab) + spec discovery
             raw::run_raw_endpoint,
+            raw::fetch_api_spec,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

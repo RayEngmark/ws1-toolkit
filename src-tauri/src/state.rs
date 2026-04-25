@@ -1,29 +1,19 @@
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
+/// OAuth-only WS1 configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WS1Config {
     pub tenant_url: String,
     pub api_key: String,
-    pub auth_mode: AuthMode,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub username: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub password: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_secret: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub token_url: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum AuthMode {
-    Basic,
-    OAuth,
+    pub client_id: String,
+    pub client_secret: String,
+    pub token_url: String,
+    /// Optional override for the Swagger spec URL used by "Import API library".
+    /// When empty, the importer auto-discovers using common WS1 patterns.
+    #[serde(default)]
+    pub spec_url: String,
 }
 
 #[derive(Debug)]

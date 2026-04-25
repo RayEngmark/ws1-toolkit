@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::api::auth::{build_headers, refresh_oauth_token};
 use crate::error::AppError;
-use crate::state::{AppState, AuthMode, WS1Config};
+use crate::state::{AppState, WS1Config};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,13 +34,8 @@ impl<'a> WS1Client<'a> {
     }
 
     async fn get_headers(&self) -> Result<reqwest::header::HeaderMap, AppError> {
-        match self.config.auth_mode {
-            AuthMode::Basic => build_headers(&self.config, None),
-            AuthMode::OAuth => {
-                let token = refresh_oauth_token(self.state, &self.config).await?;
-                build_headers(&self.config, Some(&token))
-            }
-        }
+        let token = refresh_oauth_token(self.state, &self.config).await?;
+        build_headers(&self.config, &token)
     }
 
     pub async fn request<T: DeserializeOwned>(

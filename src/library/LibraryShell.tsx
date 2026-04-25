@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { CATALOG, type CatalogEndpoint } from "./catalog";
+import { type CatalogEndpoint } from "./catalog";
+import { useCatalogStore } from "./catalogStore";
 import { useUIStore } from "../state/uiStore";
 import * as api from "../ipc/client";
 import { SearchIcon, XIcon, ChevronDown, ChevronRight } from "../lib/icons";
@@ -15,18 +16,20 @@ export function LibraryShell() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const selectedIdx = useUIStore((s) => s.libraryEndpointIdx);
   const setSelected = useUIStore((s) => s.setLibraryEndpoint);
+  const endpoints = useCatalogStore((s) => s.endpoints);
+  const source = useCatalogStore((s) => s.source);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return CATALOG;
+    if (!query.trim()) return endpoints;
     const q = query.toLowerCase();
-    return CATALOG.filter(
+    return endpoints.filter(
       (e) =>
         e.path.toLowerCase().includes(q) ||
         e.description.toLowerCase().includes(q) ||
         e.method.toLowerCase().includes(q) ||
         e.category.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, endpoints]);
 
   // Group by category preserving order of first appearance
   const grouped = useMemo(() => {
@@ -39,7 +42,10 @@ export function LibraryShell() {
     return Array.from(map.entries());
   }, [filtered]);
 
-  const selected = selectedIdx !== null ? CATALOG[selectedIdx] : null;
+  const selected =
+    selectedIdx !== null && selectedIdx < endpoints.length
+      ? endpoints[selectedIdx]
+      : null;
 
   const toggleCategory = (cat: string) =>
     setCollapsed((prev) => {
@@ -72,7 +78,9 @@ export function LibraryShell() {
         </div>
 
         <div className={styles.listMeta}>
-          <span>{filtered.length} of {CATALOG.length} endpoints</span>
+          <span>
+            {filtered.length} of {endpoints.length} endpoints · {source}
+          </span>
         </div>
 
         <div className={styles.list}>
@@ -100,7 +108,7 @@ export function LibraryShell() {
                   </button>
                   {!isCollapsed &&
                     items.map((e) => {
-                      const idx = CATALOG.indexOf(e);
+                      const idx = endpoints.indexOf(e);
                       const isSelected = idx === selectedIdx;
                       return (
                         <button

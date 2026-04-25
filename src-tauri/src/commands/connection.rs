@@ -6,6 +6,8 @@ use crate::api::types::ConnectionInfo;
 use crate::error::AppError;
 use crate::state::{AppState, WS1Config};
 
+// OAuth-only — Basic auth fields removed.
+
 #[tauri::command]
 pub async fn save_credentials(
     app: tauri::AppHandle,

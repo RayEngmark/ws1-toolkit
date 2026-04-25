@@ -89,35 +89,33 @@
   outline: none;
 }
 
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  background: var(--bg-0);
-}
-
-.segment {
-  padding: 0 14px;
-  height: 22px;
+.libraryStatus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
   font-size: 12px;
+  min-height: 22px;
+}
+
+.libraryStatus .statusValue {
+  flex: 1;
+  font-family: var(--font-mono);
+  color: var(--fg-0);
+}
+
+.statusValueMono {
+  flex: 1;
+  font-family: var(--font-mono);
   color: var(--fg-1);
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  font-size: 11px;
+  word-break: break-all;
 }
 
-.segment:hover:not(.segmentActive) {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
-
-.segment + .segment {
-  border-left: 1px solid var(--border);
-}
-
-.segmentActive {
-  background: var(--accent-dim);
-  color: var(--fg-0);
+.libraryActions {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
 }
 
 .statusRow {

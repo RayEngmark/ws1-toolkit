@@ -1,16 +1,14 @@
 // -- Config types --
 
-export type AuthMode = "basic" | "oauth";
-
+/** OAuth-only WS1 configuration. */
 export interface WS1Config {
   tenantUrl: string;
   apiKey: string;
-  authMode: AuthMode;
-  username?: string;
-  password?: string;
-  clientId?: string;
-  clientSecret?: string;
-  tokenUrl?: string;
+  clientId: string;
+  clientSecret: string;
+  tokenUrl: string;
+  /** Optional override for the Swagger spec URL used by "Import API library". */
+  specUrl?: string;
 }
 
 export interface ConnectionInfo {
