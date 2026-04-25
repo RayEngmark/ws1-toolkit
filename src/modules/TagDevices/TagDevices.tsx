@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import { DevicePicker } from "../../components/DevicePicker/DevicePicker";
+import { DeviceShuttle } from "../../components/DeviceShuttle/DeviceShuttle";
 import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
-import type { BulkActionResult, Device, Tag } from "../../ipc/contracts";
+import type { BulkActionResult, Tag } from "../../ipc/contracts";
+import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useEntryContext } from "../../dynamic/entryContext";
 import shared from "../_shared/ActionPage.module.css";
 
 export function TagDevices() {
-  const [devices, setDevices] = useState<Device[]>([]);
+  const ctx = useEntryContext();
+  // If user drilled in from Tags, pick the tag first.
+  const tagFirst = ctx?.objectKey === "tags";
+  const selection = useSelectionStore((s) => s.devices);
+  const clearSelection = useSelectionStore((s) => s.clear);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,13 +31,14 @@ export function TagDevices() {
   }, []);
 
   const selectedTag = tags.find((t) => t.id === tagId);
+  const ready = selection.length > 0 && tagId !== null;
 
   const apply = async (kind: "add" | "remove") => {
-    if (!tagId || devices.length === 0) return;
+    if (!tagId || selection.length === 0) return;
     setBusy(true);
     setLastResult(null);
     try {
-      const ids = devices.map((d) => d.id);
+      const ids = selection.map((d) => d.id);
       const result =
         kind === "add"
           ? await api.addTagsToDevices(tagId, ids)
@@ -43,42 +50,59 @@ export function TagDevices() {
           "success"
         );
       }
-      if (result.failed > 0) {
-        addToast(`${result.failed} device(s) failed`, "error");
-      }
+      if (result.failed > 0) addToast(`${result.failed} device(s) failed`, "error");
+      if (result.failed === 0 && result.accepted > 0) clearSelection();
     } finally {
       setBusy(false);
     }
   };
-
-  const ready = devices.length > 0 && tagId !== null;
 
   return (
     <div className={shared.page}>
       <header className={shared.header}>
         <h1 className={shared.title}>Tag devices</h1>
         <p className={shared.subtitle}>
-          Add or remove a tag on multiple devices at once. Paste any mix of
-          serials, usernames, UUIDs, or asset tags — we resolve them all.
+          Add or remove a tag on the selected devices.
         </p>
       </header>
 
       <div className={shared.body}>
         <div className={shared.stack}>
-          <DevicePicker resolved={devices} onChange={setDevices} />
-
-          <TargetPicker
-            label="Tag"
-            emptyHint="Pick a tag…"
-            items={tags.map((t) => ({
-              id: t.id,
-              primary: t.tagName,
-              meta: `${t.deviceCount} devices`,
-            }))}
-            selectedId={tagId}
-            onSelect={setTagId}
-            onLoad={loadTags}
-          />
+          {tagFirst ? (
+            <>
+              <TargetPicker
+                label="Tag"
+                emptyHint="Pick a tag…"
+                items={tags.map((t) => ({
+                  id: t.id,
+                  primary: t.tagName,
+                  meta: `${t.deviceCount} devices`,
+                }))}
+                selectedId={tagId}
+                onSelect={setTagId}
+                onLoad={loadTags}
+              />
+              {tagId !== null && <DeviceShuttle />}
+            </>
+          ) : (
+            <>
+              <DeviceShuttle />
+              {selection.length > 0 && (
+                <TargetPicker
+                  label="Tag"
+                  emptyHint="Pick a tag…"
+                  items={tags.map((t) => ({
+                    id: t.id,
+                    primary: t.tagName,
+                    meta: `${t.deviceCount} devices`,
+                  }))}
+                  selectedId={tagId}
+                  onSelect={setTagId}
+                  onLoad={loadTags}
+                />
+              )}
+            </>
+          )}
 
           {lastResult && (
             <div
@@ -101,13 +125,15 @@ export function TagDevices() {
         <span className={shared.footerInfo}>
           {ready ? (
             <>
-              <span className={shared.footerCount}>{devices.length}</span>
+              <span className={shared.footerCount}>{selection.length}</span>
               <span>device(s) ·</span>
               <span>tag &quot;{selectedTag?.tagName}&quot;</span>
             </>
           ) : (
             <span style={{ color: "var(--fg-3)" }}>
-              Paste devices and pick a tag to enable actions
+              {selection.length === 0
+                ? "Add devices to the selection"
+                : "Pick a tag"}
             </span>
           )}
         </span>
@@ -117,7 +143,7 @@ export function TagDevices() {
           onClick={() => apply("add")}
           disabled={!ready || busy}
         >
-          {busy ? "Working…" : `Add tag to ${devices.length || 0} device(s)`}
+          {busy ? "Working…" : `Add tag to ${selection.length || 0} device(s)`}
         </button>
         <button
           className={shared.btnDanger}

@@ -66,3 +66,42 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Mode tabs */
+.modeTabs {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-0);
+  overflow: hidden;
+}
+
+.modeTab {
+  height: 22px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 100ms ease;
+}
+
+.modeTab + .modeTab {
+  border-left: 1px solid var(--border);
+}
+
+.modeTab:hover:not(.modeTabActive) {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+
+.modeTabActive {
+  background: var(--accent-dim);
+  color: var(--fg-0);
+}

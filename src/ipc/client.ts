@@ -14,6 +14,8 @@ import type {
   WS1Config,
 } from "./contracts";
 
+export type { Device } from "./contracts";
+
 const IS_TAURI =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -82,6 +84,14 @@ export const createTag = (name: string, ogId: number): Promise<Tag> =>
 
 export const searchOrgGroups = (): Promise<OrgGroup[]> =>
   IS_TAURI ? ipc("search_org_groups") : mock.searchOrgGroups();
+
+/**
+ * Get devices in an OG and all its descendants. WS1 device search supports
+ * `lgid={ogId}` query param which transitively includes children when the
+ * tenant config says so. Backend implements this via `/api/mdm/devices/search?lgid=…&pagesize=…`.
+ */
+export const getDevicesInOg = (ogId: number): Promise<Device[]> =>
+  IS_TAURI ? ipc("get_devices_in_og", { ogId }) : mock.getDevicesInOg(ogId);
 
 export const getOgChildren = (ogId: number): Promise<OrgGroup[]> =>
   IS_TAURI ? ipc("get_og_children", { ogId }) : mock.getOgChildren(ogId);
@@ -187,3 +197,27 @@ export const removeDevicesFromSmartGroup = (
   IS_TAURI
     ? ipc("remove_devices_from_smart_group", { smartGroupId, deviceIds })
     : mock.removeDevicesFromSmartGroup(smartGroupId, deviceIds);
+
+// -- Raw endpoint runner (Library tab) --
+
+export interface RawRequest {
+  method: string;
+  path: string;
+  body?: unknown;
+}
+
+export interface RawResponse {
+  ok: boolean;
+  status: number;
+  body: unknown;
+}
+
+/**
+ * Run an arbitrary endpoint against the connected tenant — used by the API
+ * Library tab. In dev (vite-only) this returns a mock; real Tauri build
+ * forwards to the WS1 client.
+ */
+export const runRawEndpoint = (req: RawRequest): Promise<RawResponse> =>
+  IS_TAURI
+    ? ipc("run_raw_endpoint", { request: req })
+    : mock.runRawEndpoint(req);

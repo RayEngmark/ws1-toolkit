@@ -397,6 +397,29 @@ const FAKE_SGS: SmartGroup[] = [
   { id: 7008, name: "Compliance Watch", criteriaType: "All", managedByOgId: 1, managedByOgName: "Acme Corporation", deviceCount: 41, appCount: 0, profileCount: 0 },
 ];
 
+// Get all devices that live in a given OG _or any of its descendants_.
+// Mock: uses ogId on each fake device and the OG tree to compute descendants.
+export async function getDevicesInOg(ogId: number): Promise<Device[]> {
+  await new Promise((r) => setTimeout(r, 150));
+  const collectIds = (groups: OrgGroup[], targetId: number, found: Set<number>) => {
+    for (const g of groups) {
+      if (g.id === targetId) {
+        const collect = (gg: OrgGroup) => {
+          found.add(gg.id);
+          for (const child of gg.children) collect(child);
+        };
+        collect(g);
+        return true;
+      }
+      if (collectIds(g.children, targetId, found)) return true;
+    }
+    return false;
+  };
+  const ids = new Set<number>();
+  collectIds(FAKE_OGS, ogId, ids);
+  return FAKE_DEVICES.filter((d) => ids.has(d.ogId));
+}
+
 export async function searchSmartGroups(): Promise<SmartGroup[]> {
   await new Promise((r) => setTimeout(r, 100));
   return FAKE_SGS;
@@ -454,4 +477,24 @@ export async function removeProfileFromDevices(
 ): Promise<BulkActionResult> {
   await new Promise((r) => setTimeout(r, 600));
   return { total: serialNumbers.length, accepted: serialNumbers.length, failed: 0, errors: [] };
+}
+
+// -- Raw endpoint runner (Library tab mock) --
+
+export async function runRawEndpoint(req: {
+  method: string;
+  path: string;
+  body?: unknown;
+}): Promise<{ ok: boolean; status: number; body: unknown }> {
+  await new Promise((r) => setTimeout(r, 300));
+  // Mock: echo the request shape with a fake-success response shape.
+  return {
+    ok: true,
+    status: 200,
+    body: {
+      _mock: true,
+      message: "Mock response — wire the Rust runner to call against your real tenant.",
+      request: req,
+    },
+  };
 }

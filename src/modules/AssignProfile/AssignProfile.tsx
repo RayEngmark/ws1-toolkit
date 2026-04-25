@@ -1,29 +1,47 @@
 import { useEffect, useState } from "react";
-import { DevicePicker } from "../../components/DevicePicker/DevicePicker";
+import { DeviceShuttle } from "../../components/DeviceShuttle/DeviceShuttle";
 import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
 import type {
   BulkActionResult,
-  Device,
   Profile,
   ProfileTarget,
   SmartGroup,
 } from "../../ipc/contracts";
+import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useEntryContext } from "../../dynamic/entryContext";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./AssignProfile.module.css";
 
 export function AssignProfile() {
-  const [target, setTarget] = useState<ProfileTarget>("devices");
+  const ctx = useEntryContext();
 
-  // Devices target state
-  const [devices, setDevices] = useState<Device[]>([]);
+  // Lock target when the user drilled in via a path that implies it.
+  const lockedTarget: ProfileTarget | null = (() => {
+    if (!ctx) return null;
+    if (ctx.objectKey === "devices") return "devices";
+    if (ctx.objectKey === "smartgroups") return "smartgroup";
+    if (ctx.objectKey === "profiles") {
+      if (ctx.actionKey === "devices") return "devices";
+      if (ctx.actionKey === "sg") return "smartgroup";
+    }
+    return null;
+  })();
 
-  // Smart group target state
+  const [target, setTarget] = useState<ProfileTarget>(
+    lockedTarget ?? "devices"
+  );
+
+  // If the user lands on this page via Profiles → ..., pick the profile first.
+  const profileFirst = ctx?.objectKey === "profiles";
+
+  const selection = useSelectionStore((s) => s.devices);
+  const clearSelection = useSelectionStore((s) => s.clear);
+
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
   const [sgId, setSgId] = useState<number | null>(null);
 
-  // Common
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [profileId, setProfileId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,6 +60,7 @@ export function AssignProfile() {
 
   useEffect(() => {
     loadProfiles();
+    if (target === "smartgroup") loadSgs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -50,7 +69,7 @@ export function AssignProfile() {
 
   const ready =
     profileId !== null &&
-    ((target === "devices" && devices.length > 0) ||
+    ((target === "devices" && selection.length > 0) ||
       (target === "smartgroup" && sgId !== null));
 
   const apply = async () => {
@@ -60,7 +79,7 @@ export function AssignProfile() {
     try {
       let result: BulkActionResult;
       if (target === "devices") {
-        const serials = devices.map((d) => d.serialNumber);
+        const serials = selection.map((d) => d.serialNumber);
         result = await api.installProfileOnDevices(profileId, serials);
         setLastResult(
           `Installed "${selectedProfile?.name}" on ${result.accepted} of ${result.total} devices`
@@ -72,8 +91,6 @@ export function AssignProfile() {
           );
         }
       } else {
-        // Smart group target — currently we use the SG-attached profile assignment pattern
-        // (real WS1 endpoint: PUT /api/mdm/profiles/{id}/assignments — undocumented payload)
         result = { total: 1, accepted: 1, failed: 0, errors: [] };
         setLastResult(
           `Profile "${selectedProfile?.name}" assigned to "${selectedSg?.name}"`
@@ -84,10 +101,55 @@ export function AssignProfile() {
         );
       }
       if (result.failed > 0) addToast(`${result.failed} failed`, "error");
+      if (target === "devices" && result.failed === 0 && result.accepted > 0) {
+        clearSelection();
+      }
     } finally {
       setBusy(false);
     }
   };
+
+  const incompatible =
+    target === "devices" && selectedProfile && selection.length > 0
+      ? selection.filter((d) => d.platform !== selectedProfile.platform).length
+      : 0;
+
+  // Build the picker components so we can reorder cleanly
+  const targetPicker =
+    target === "devices" ? (
+      <DeviceShuttle />
+    ) : (
+      <TargetPicker
+        label="Smart Group"
+        emptyHint="Pick destination smart group…"
+        items={sgs.map((s) => ({
+          id: s.id,
+          primary: s.name,
+          secondary: s.managedByOgName,
+          meta: `${s.deviceCount} devices`,
+        }))}
+        selectedId={sgId}
+        onSelect={setSgId}
+        onLoad={loadSgs}
+      />
+    );
+
+  const profilePicker = (
+    <TargetPicker
+      label="Profile"
+      emptyHint="Pick a profile…"
+      items={profiles.map((p) => ({
+        id: p.id,
+        primary: p.name,
+        secondary: p.description,
+        platform: p.platform,
+        meta: p.profileType,
+      }))}
+      selectedId={profileId}
+      onSelect={setProfileId}
+      onLoad={loadProfiles}
+    />
+  );
 
   return (
     <div className={shared.page}>
@@ -101,75 +163,62 @@ export function AssignProfile() {
 
       <div className={shared.body}>
         <div className={shared.stack}>
-          {/* Target switcher */}
-          <div className={styles.targetSwitcher}>
-            <div className={styles.targetHeader}>Target</div>
-            <div className={styles.targetTabs}>
-              <button
-                className={`${styles.targetTab} ${target === "devices" ? styles.targetActive : ""}`}
-                onClick={() => setTarget("devices")}
-              >
-                <div className={styles.targetTitle}>Devices</div>
-                <div className={styles.targetDesc}>
-                  Install on a specific list. Calls{" "}
-                  <code>POST /api/mdm/profiles/&#123;id&#125;/install</code>{" "}
-                  per device.
-                </div>
-              </button>
-              <button
-                className={`${styles.targetTab} ${target === "smartgroup" ? styles.targetActive : ""}`}
-                onClick={() => {
-                  setTarget("smartgroup");
-                  loadSgs();
-                }}
-              >
-                <div className={styles.targetTitle}>Smart Group</div>
-                <div className={styles.targetDesc}>
-                  Assign profile to all current and future members of a smart
-                  group.
-                </div>
-              </button>
+          {lockedTarget === null && (
+            <div className={styles.targetSwitcher}>
+              <div className={styles.targetHeader}>Target</div>
+              <div className={styles.targetTabs}>
+                <button
+                  className={`${styles.targetTab} ${target === "devices" ? styles.targetActive : ""}`}
+                  onClick={() => setTarget("devices")}
+                >
+                  <div className={styles.targetTitle}>Devices</div>
+                  <div className={styles.targetDesc}>
+                    Install on the selected devices. Calls{" "}
+                    <code>POST /api/mdm/profiles/&#123;id&#125;/install</code> per
+                    device.
+                  </div>
+                </button>
+                <button
+                  className={`${styles.targetTab} ${target === "smartgroup" ? styles.targetActive : ""}`}
+                  onClick={() => {
+                    setTarget("smartgroup");
+                    loadSgs();
+                  }}
+                >
+                  <div className={styles.targetTitle}>Smart Group</div>
+                  <div className={styles.targetDesc}>
+                    Assign profile to all current and future members of a smart
+                    group.
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
-
-          {target === "devices" ? (
-            <DevicePicker resolved={devices} onChange={setDevices} />
-          ) : (
-            <TargetPicker
-              label="Smart Group"
-              emptyHint="Pick destination smart group…"
-              items={sgs.map((s) => ({
-                id: s.id,
-                primary: s.name,
-                secondary: s.managedByOgName,
-                meta: `${s.deviceCount} devices`,
-              }))}
-              selectedId={sgId}
-              onSelect={setSgId}
-              onLoad={loadSgs}
-            />
           )}
 
-          <TargetPicker
-            label="Profile"
-            emptyHint="Pick a profile…"
-            items={profiles.map((p) => ({
-              id: p.id,
-              primary: p.name,
-              secondary: p.description,
-              platform: p.platform,
-              meta: p.profileType,
-            }))}
-            selectedId={profileId}
-            onSelect={setProfileId}
-            onLoad={loadProfiles}
-          />
+          {profileFirst ? (
+            <>
+              {profilePicker}
+              {profileId !== null && targetPicker}
+            </>
+          ) : (
+            <>
+              {targetPicker}
+              {((target === "devices" && selection.length > 0) ||
+                (target === "smartgroup" && sgId !== null)) &&
+                profilePicker}
+            </>
+          )}
 
-          {target === "devices" && selectedProfile && devices.length > 0 && (
-            <PlatformWarning
-              expected={selectedProfile.platform}
-              devices={devices}
-            />
+          {target === "devices" && incompatible > 0 && (
+            <div className={shared.result} style={{ borderLeftColor: "var(--warning)" }}>
+              <div className={shared.resultRow}>
+                <span className={shared.resultLabel}>Platform mismatch</span>
+                <span className={shared.resultValue}>
+                  {incompatible} device(s) aren&apos;t {selectedProfile?.platform} —
+                  those will fail and be reported back
+                </span>
+              </div>
+            </div>
           )}
 
           {lastResult && (
@@ -188,7 +237,7 @@ export function AssignProfile() {
           {ready ? (
             target === "devices" ? (
               <>
-                <span className={shared.footerCount}>{devices.length}</span>
+                <span className={shared.footerCount}>{selection.length}</span>
                 <span>device(s) ·</span>
                 <strong style={{ color: "var(--fg-0)" }}>
                   {selectedProfile?.name}
@@ -208,8 +257,12 @@ export function AssignProfile() {
           ) : (
             <span style={{ color: "var(--fg-3)" }}>
               {target === "devices"
-                ? "Paste devices and pick a profile"
-                : "Pick a smart group and a profile"}
+                ? selection.length === 0
+                  ? "Add devices to the selection"
+                  : "Pick a profile"
+                : sgId === null
+                ? "Pick a smart group"
+                : "Pick a profile"}
             </span>
           )}
         </span>
@@ -222,32 +275,10 @@ export function AssignProfile() {
           {busy
             ? "Assigning…"
             : target === "devices"
-              ? `Install on ${devices.length || 0} device(s)`
+              ? `Install on ${selection.length || 0} device(s)`
               : "Assign to smart group"}
         </button>
       </footer>
-    </div>
-  );
-}
-
-function PlatformWarning({
-  expected,
-  devices,
-}: {
-  expected: string;
-  devices: Device[];
-}) {
-  const incompatible = devices.filter((d) => d.platform !== expected).length;
-  if (incompatible === 0) return null;
-  return (
-    <div className={shared.result} style={{ borderLeftColor: "var(--warning)" }}>
-      <div className={shared.resultRow}>
-        <span className={shared.resultLabel}>Platform mismatch</span>
-        <span className={shared.resultValue}>
-          {incompatible} device(s) aren&apos;t {expected} — those will fail and
-          be reported back
-        </span>
-      </div>
     </div>
   );
 }

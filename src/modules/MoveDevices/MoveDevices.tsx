@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { DevicePicker } from "../../components/DevicePicker/DevicePicker";
+import { DeviceShuttle } from "../../components/DeviceShuttle/DeviceShuttle";
 import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
-import type { BulkActionResult, Device, OrgGroup } from "../../ipc/contracts";
+import type { BulkActionResult, OrgGroup } from "../../ipc/contracts";
+import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useEntryContext } from "../../dynamic/entryContext";
 import shared from "../_shared/ActionPage.module.css";
 
 interface FlatOG {
@@ -26,7 +28,10 @@ function flattenOGs(groups: OrgGroup[], prefix = ""): FlatOG[] {
 }
 
 export function MoveDevices() {
-  const [devices, setDevices] = useState<Device[]>([]);
+  const ctx = useEntryContext();
+  const ogFirst = ctx?.objectKey === "ogs";
+  const selection = useSelectionStore((s) => s.devices);
+  const clearSelection = useSelectionStore((s) => s.clear);
   const [ogs, setOgs] = useState<FlatOG[]>([]);
   const [ogId, setOgId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,20 +50,18 @@ export function MoveDevices() {
   }, []);
 
   const selectedOg = ogs.find((o) => o.id === ogId);
-  const ready = devices.length > 0 && ogId !== null;
-
-  // Cross-OG warning: how many devices are already in the target OG?
   const alreadyInTarget = selectedOg
-    ? devices.filter((d) => d.ogId === ogId).length
+    ? selection.filter((d) => d.ogId === ogId).length
     : 0;
-  const willMove = devices.length - alreadyInTarget;
+  const willMove = selection.length - alreadyInTarget;
+  const ready = selection.length > 0 && ogId !== null && willMove > 0;
 
   const apply = async () => {
-    if (!ogId || devices.length === 0) return;
+    if (!ogId || selection.length === 0) return;
     setBusy(true);
     setLastResult(null);
     try {
-      const ids = devices.filter((d) => d.ogId !== ogId).map((d) => d.id);
+      const ids = selection.filter((d) => d.ogId !== ogId).map((d) => d.id);
       const result = await api.bulkMoveDevices(ids, ogId);
       setLastResult({ og: selectedOg?.fullPath ?? "", result });
       if (result.accepted > 0) {
@@ -68,6 +71,8 @@ export function MoveDevices() {
         );
       }
       if (result.failed > 0) addToast(`${result.failed} device(s) failed`, "error");
+      // Clear selection on full success — stale selections after an action are confusing
+      if (result.failed === 0 && result.accepted > 0) clearSelection();
     } finally {
       setBusy(false);
     }
@@ -78,30 +83,52 @@ export function MoveDevices() {
       <header className={shared.header}>
         <h1 className={shared.title}>Move devices to organization group</h1>
         <p className={shared.subtitle}>
-          Reassign devices to a different organization group. Profile and policy
+          Move the selected devices to a different OG. Profile and policy
           assignments will follow the target OG&apos;s configuration.
         </p>
       </header>
 
       <div className={shared.body}>
         <div className={shared.stack}>
-          <DevicePicker resolved={devices} onChange={setDevices} />
+          {ogFirst ? (
+            <>
+              <TargetPicker
+                label="Target organization group"
+                emptyHint="Pick destination OG…"
+                items={ogs.map((o) => ({
+                  id: o.id,
+                  primary: o.name,
+                  secondary: o.fullPath,
+                  meta: o.type,
+                }))}
+                selectedId={ogId}
+                onSelect={setOgId}
+                onLoad={loadOgs}
+              />
+              {ogId !== null && <DeviceShuttle />}
+            </>
+          ) : (
+            <>
+              <DeviceShuttle />
+              {selection.length > 0 && (
+                <TargetPicker
+                  label="Target organization group"
+                  emptyHint="Pick destination OG…"
+                  items={ogs.map((o) => ({
+                    id: o.id,
+                    primary: o.name,
+                    secondary: o.fullPath,
+                    meta: o.type,
+                  }))}
+                  selectedId={ogId}
+                  onSelect={setOgId}
+                  onLoad={loadOgs}
+                />
+              )}
+            </>
+          )}
 
-          <TargetPicker
-            label="Target organization group"
-            emptyHint="Pick destination OG…"
-            items={ogs.map((o) => ({
-              id: o.id,
-              primary: o.name,
-              secondary: o.fullPath,
-              meta: o.type,
-            }))}
-            selectedId={ogId}
-            onSelect={setOgId}
-            onLoad={loadOgs}
-          />
-
-          {ready && alreadyInTarget > 0 && (
+          {selection.length > 0 && ogId !== null && alreadyInTarget > 0 && (
             <div className={shared.result} style={{ borderLeftColor: "var(--warning)" }}>
               <div className={shared.resultRow}>
                 <span className={shared.resultLabel}>Heads up</span>
@@ -138,7 +165,11 @@ export function MoveDevices() {
             </>
           ) : (
             <span style={{ color: "var(--fg-3)" }}>
-              Paste devices and pick a target OG
+              {selection.length === 0
+                ? "Add devices to the selection"
+                : ogId === null
+                ? "Pick a target OG"
+                : "All selected devices are already in this OG"}
             </span>
           )}
         </span>
@@ -146,7 +177,7 @@ export function MoveDevices() {
         <button
           className={shared.btnPrimary}
           onClick={apply}
-          disabled={!ready || busy || willMove === 0}
+          disabled={!ready || busy}
         >
           {busy ? "Moving…" : `Move ${willMove} device(s)`}
         </button>

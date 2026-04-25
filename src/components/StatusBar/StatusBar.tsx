@@ -1,4 +1,5 @@
 import { useConnectionStore } from "../../state/connectionStore";
+import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
 import { CircleFilled } from "../../lib/icons";
 import styles from "./StatusBar.module.css";
@@ -20,6 +21,8 @@ export function StatusBar() {
   const isConnected = useConnectionStore((s) => s.isConnected);
   const tenantUrl = useConnectionStore((s) => s.tenantUrl);
   const activeModule = useUIStore((s) => s.activeModule);
+  const selectionCount = useSelectionStore((s) => s.devices.length);
+  const clearSelection = useSelectionStore((s) => s.clear);
 
   const tenantHost = tenantUrl
     ? tenantUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
@@ -36,6 +39,16 @@ export function StatusBar() {
       <span className={styles.segment}>{tenantHost}</span>
       <span className={styles.segment}>{MODULE_LABELS[activeModule]}</span>
       <span className={styles.spacer} />
+      {selectionCount > 0 && (
+        <button
+          className={`${styles.segment} ${styles.selectionPill}`}
+          onClick={clearSelection}
+          title="Clear selection"
+        >
+          <span>{selectionCount} selected</span>
+          <span className={styles.clearLabel}>× clear</span>
+        </button>
+      )}
       <span className={styles.segment}>UTF-8</span>
       <span className={styles.segment}>v0.1.0</span>
     </footer>

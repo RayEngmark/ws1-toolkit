@@ -42,3 +42,25 @@
 .status.disconnected {
   color: var(--fg-2);
 }
+
+.selectionPill {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.selectionPill:hover {
+  color: var(--fg-0);
+}
+
+.clearLabel {
+  color: var(--fg-3);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.selectionPill:hover .clearLabel {
+  color: var(--danger);
+}

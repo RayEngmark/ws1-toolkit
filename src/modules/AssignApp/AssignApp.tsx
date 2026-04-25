@@ -3,10 +3,14 @@ import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
 import type { App, AppPushMode, BulkActionResult, SmartGroup } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { useEntryContext } from "../../dynamic/entryContext";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./AssignApp.module.css";
 
 export function AssignApp() {
+  const ctx = useEntryContext();
+  // Default order is App → Smart Group. Flip when entering via Smart Groups.
+  const sgFirst = ctx?.objectKey === "smartgroups";
   const [apps, setApps] = useState<App[]>([]);
   const [appId, setAppId] = useState<number | null>(null);
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
@@ -71,35 +75,73 @@ export function AssignApp() {
 
       <div className={shared.body}>
         <div className={shared.stack}>
-          <TargetPicker
-            label="App"
-            emptyHint="Pick an app…"
-            items={apps.map((a) => ({
-              id: a.id,
-              primary: a.name,
-              secondary: a.bundleId,
-              platform: a.platform,
-              meta: `${a.appType} · v${a.version}`,
-            }))}
-            selectedId={appId}
-            onSelect={setAppId}
-            onLoad={loadApps}
-          />
+          {sgFirst ? (
+            <>
+              <TargetPicker
+                label="Smart Group"
+                emptyHint="Pick destination smart group…"
+                items={sgs.map((s) => ({
+                  id: s.id,
+                  primary: s.name,
+                  secondary: s.managedByOgName,
+                  meta: `${s.deviceCount} devices`,
+                }))}
+                selectedId={sgId}
+                onSelect={setSgId}
+                onLoad={loadSgs}
+              />
+              {sgId !== null && (
+                <TargetPicker
+                  label="App"
+                  emptyHint="Pick an app…"
+                  items={apps.map((a) => ({
+                    id: a.id,
+                    primary: a.name,
+                    secondary: a.bundleId,
+                    platform: a.platform,
+                    meta: `${a.appType} · v${a.version}`,
+                  }))}
+                  selectedId={appId}
+                  onSelect={setAppId}
+                  onLoad={loadApps}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <TargetPicker
+                label="App"
+                emptyHint="Pick an app…"
+                items={apps.map((a) => ({
+                  id: a.id,
+                  primary: a.name,
+                  secondary: a.bundleId,
+                  platform: a.platform,
+                  meta: `${a.appType} · v${a.version}`,
+                }))}
+                selectedId={appId}
+                onSelect={setAppId}
+                onLoad={loadApps}
+              />
+              {appId !== null && (
+                <TargetPicker
+                  label="Smart Group"
+                  emptyHint="Pick destination smart group…"
+                  items={sgs.map((s) => ({
+                    id: s.id,
+                    primary: s.name,
+                    secondary: s.managedByOgName,
+                    meta: `${s.deviceCount} devices`,
+                  }))}
+                  selectedId={sgId}
+                  onSelect={setSgId}
+                  onLoad={loadSgs}
+                />
+              )}
+            </>
+          )}
 
-          <TargetPicker
-            label="Smart Group"
-            emptyHint="Pick destination smart group…"
-            items={sgs.map((s) => ({
-              id: s.id,
-              primary: s.name,
-              secondary: s.managedByOgName,
-              meta: `${s.deviceCount} devices`,
-            }))}
-            selectedId={sgId}
-            onSelect={setSgId}
-            onLoad={loadSgs}
-          />
-
+          {appId !== null && sgId !== null && (
           <div className={styles.pushModePanel}>
             <div className={styles.pushModeHeader}>Push Mode</div>
             <div className={styles.pushModeBody}>
@@ -125,6 +167,7 @@ export function AssignApp() {
               </button>
             </div>
           </div>
+          )}
 
           {selectedApp && selectedSg && selectedApp.platform &&
             selectedSg.criteriaType === "All" && (
