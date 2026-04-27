@@ -37,16 +37,20 @@ src/
                  AssignProfile, AssignApp, CreateTag, LookupSmartGroup,
                  Settings, _shared/
   library/
-    catalog.ts        Auto-generated from docs/*.md by build-catalog.mjs.
-                      DO NOT EDIT — rerun the script.
+    catalog.ts        Auto-generated from docs/specs/*.json by
+                      build-catalog.mjs. DO NOT EDIT — rerun the script.
     catalogStore.ts   Zustand store; bundled catalog by default, swapped
                       by Settings → "Import API library from tenant"
     specToCatalog.ts  Swagger 2.0 / OpenAPI 3.0 → CatalogEndpoint[]
     LibraryShell.tsx  Tab UI: search, category tree, raw runner
 
-scripts/build-catalog.mjs   Markdown → catalog.ts. Run when docs/ updates.
-docs/ws1-mdm-v1-api-source.md   Verbatim WS1 API reference (498 endpoints)
-docs/ws1-mdm-v1-api-reference.md  Annotated commentary version
+scripts/build-catalog.mjs   Merges every spec under docs/specs/*.json
+                            into catalog.ts. Run after re-fetching specs.
+docs/specs/                 OpenAPI specs captured from a real tenant via
+                            /api/help/Docs/<name>. Currently MDM V1-V4.
+docs/ws1-mdm-v1-api-source.md     Legacy markdown reference (kept for
+                                  human reading — no longer feeds catalog).
+docs/ws1-mdm-v1-api-reference.md  Annotated commentary version.
 ```
 
 ## Conventions and aesthetic — read this before touching UI

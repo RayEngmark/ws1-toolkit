@@ -1,70 +1,107 @@
-// Parses /home/raymond/ws1-toolkit/docs/ws1-mdm-v1-api-reference.md
-// and emits /home/raymond/ws1-toolkit/src/library/catalog.ts.
+// Builds /home/raymond/ws1-toolkit/src/library/catalog.ts by merging every
+// OpenAPI spec under docs/specs/. The specs were captured from a real
+// tenant's /api/help/Docs/<name> endpoint — re-fetch them with curl and
+// rerun this script to refresh.
 //
 // Run: node scripts/build-catalog.mjs
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
+import { readFileSync, writeFileSync, readdirSync } from "fs";
 
-const SRC = "/home/raymond/ws1-toolkit/docs/ws1-mdm-v1-api-source.md";
+const SPECS_DIR = "/home/raymond/ws1-toolkit/docs/specs";
 const OUT = "/home/raymond/ws1-toolkit/src/library/catalog.ts";
 
-const md = readFileSync(SRC, "utf-8");
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
-// Match section headers like "## SmartGroups"
-// Match endpoint lines like "- **POST** `/path` — description"
-// Or "- `/path` — description" (when method is unclear in source — rare)
+function specToEntries(spec) {
+  if (!spec || typeof spec !== "object") return [];
+  const paths = spec.paths ?? {};
 
-const lines = md.split("\n");
-let currentCategory = null;
-const endpoints = [];
-
-const HEADER_RE = /^##\s+(.+)$/;
-const ENDPOINT_RE = /^-\s+\*\*(GET|POST|PUT|PATCH|DELETE)\*\*\s+`([^`]+)`\s+—\s+(.+)$/;
-// Some entries are missing the method — skip those silently.
-
-for (const raw of lines) {
-  const line = raw.trimEnd();
-  const headerMatch = line.match(HEADER_RE);
-  if (headerMatch) {
-    currentCategory = headerMatch[1].trim();
-    continue;
-  }
-  const endpointMatch = line.match(ENDPOINT_RE);
-  if (endpointMatch && currentCategory) {
-    let [, method, path, desc] = endpointMatch;
-    desc = desc.trim();
-    let isNew = false;
-    if (desc.startsWith("New - ")) {
-      isNew = true;
-      desc = desc.slice("New - ".length);
+  // Resolve basePath. Swagger 2.0: top-level `basePath`. OpenAPI 3.0:
+  // first server's url (we want only the pathname).
+  let basePath = "";
+  if (typeof spec.basePath === "string") {
+    basePath = spec.basePath;
+  } else if (Array.isArray(spec.servers) && spec.servers.length > 0) {
+    const url = spec.servers[0]?.url;
+    if (typeof url === "string") {
+      try {
+        basePath = new URL(url).pathname || "";
+      } catch {
+        basePath = url;
+      }
     }
-    endpoints.push({ category: currentCategory, method, path, description: desc, isNew });
   }
+  basePath = basePath.replace(/\/$/, "");
+
+  const out = [];
+  for (const [rawPath, ops] of Object.entries(paths)) {
+    if (!ops || typeof ops !== "object") continue;
+    const fullPath = `${basePath}${rawPath.startsWith("/") ? "" : "/"}${rawPath}`;
+    for (const m of METHODS) {
+      const op = ops[m.toLowerCase()];
+      if (!op) continue;
+
+      const tags = Array.isArray(op.tags) ? op.tags : [];
+      const category = tags[0] ?? "Uncategorised";
+      const summary = typeof op.summary === "string" ? op.summary : "";
+      const rawDesc =
+        typeof op.description === "string" && op.description.length > 0
+          ? op.description
+          : summary || (typeof op.operationId === "string" ? op.operationId : "");
+
+      const isNew = /^\s*new\b\s*-?\s*/i.test(summary);
+      const description = rawDesc.replace(/^\s*new\b\s*-?\s*/i, "").trim();
+
+      out.push({
+        category,
+        method: m,
+        path: fullPath,
+        description,
+        ...(isNew ? { isNew: true } : {}),
+      });
+    }
+  }
+  return out;
 }
 
-// Skip categories that are out-of-scope reference text (e.g. "Schemas", "Quick map")
-const STOP_CATEGORIES = new Set([
-  "Schemas",
-  "Quick map: what we currently use vs the spec",
-  "Action items based on this spec",
-]);
-const filtered = endpoints.filter((e) => !STOP_CATEGORIES.has(e.category));
+const merged = new Map();
+const specFiles = readdirSync(SPECS_DIR)
+  .filter((f) => f.endsWith(".json"))
+  .sort();
 
-// Group counts for sanity
+let totalSourceEntries = 0;
+for (const file of specFiles) {
+  const spec = JSON.parse(readFileSync(`${SPECS_DIR}/${file}`, "utf-8"));
+  const entries = specToEntries(spec);
+  totalSourceEntries += entries.length;
+  for (const e of entries) {
+    const key = `${e.method} ${e.path}`;
+    const existing = merged.get(key);
+    // Prefer the entry with the longer description (richer doc).
+    if (!existing || e.description.length > existing.description.length) {
+      merged.set(key, e);
+    }
+  }
+  console.log(`  ${file.padEnd(20)} ${entries.length} entries`);
+}
+
+const final = [...merged.values()].sort(
+  (a, b) =>
+    a.category.localeCompare(b.category) ||
+    a.path.localeCompare(b.path) ||
+    a.method.localeCompare(b.method)
+);
+
 const byCategory = {};
-for (const e of filtered) {
-  byCategory[e.category] = (byCategory[e.category] || 0) + 1;
-}
+for (const e of final) byCategory[e.category] = (byCategory[e.category] || 0) + 1;
+console.log(
+  `\nMerged ${totalSourceEntries} source entries → ${final.length} unique endpoints across ${Object.keys(byCategory).length} categories.`
+);
 
-console.log(`Parsed ${filtered.length} endpoints across ${Object.keys(byCategory).length} categories.`);
-for (const [cat, count] of Object.entries(byCategory)) {
-  console.log(`  ${cat.padEnd(50)} ${count}`);
-}
-
-// Emit TS file
-const head = `// Auto-generated by scripts/build-catalog.mjs from docs/ws1-mdm-v1-api-reference.md.
-// Do NOT edit by hand — re-run the script after updating the source markdown.
+const head = `// Auto-generated by scripts/build-catalog.mjs from docs/specs/*.json.
+// Sources: ${specFiles.join(", ")}
+// Re-fetch the specs (curl /api/help/Docs/<name>) and rerun the script
+// to refresh.
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -79,19 +116,9 @@ export interface CatalogEndpoint {
 
 export const CATALOG: CatalogEndpoint[] = `;
 
-// Each catalog entry should include the /api/mdm prefix for paths in this section
-// (the source markdown lists relative paths like "/devices/{id}" — we prepend the
-// /api/mdm root for use with our existing WS1 client).
-const withApiPrefix = filtered.map((e) => ({
-  ...e,
-  path: e.path.startsWith("/api/") ? e.path : "/api/mdm" + e.path,
-}));
-
-const tsBody = JSON.stringify(withApiPrefix, null, 2);
-
 const tail = ` as const;
 
-/** All distinct categories in the catalog, in original ordering. */
+/** All distinct categories in the catalog, in alphabetical order. */
 export const CATALOG_CATEGORIES: string[] = (() => {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -105,7 +132,5 @@ export const CATALOG_CATEGORIES: string[] = (() => {
 })();
 `;
 
-const outDir = dirname(OUT);
-if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
-writeFileSync(OUT, head + tsBody + tail);
+writeFileSync(OUT, head + JSON.stringify(final, null, 2) + tail);
 console.log(`\nWrote ${OUT}`);
