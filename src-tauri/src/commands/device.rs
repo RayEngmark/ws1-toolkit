@@ -15,9 +15,23 @@ pub async fn search_devices(
 ) -> Result<DeviceSearchResult, AppError> {
     let client = WS1Client::from_state(&state).await?;
 
+    // The `id=` query param only matches WS1's internal numeric device ID —
+    // passing a serial/IMEI/MAC/UUID into it gets silently ignored and the
+    // server returns all devices. Use the field-specific param instead.
+    let param_name = match search_by.as_str() {
+        "Serialnumber" => "serialnumber",
+        "Macaddress" => "macaddress",
+        "Udid" => "udid",
+        "ImeiNumber" => "imeinumber",
+        "Username" => "user",
+        "Assettag" => "assetnumber",
+        "DeviceFriendlyName" => "devicefriendlyname",
+        _ => "id",
+    };
+
     let path = format!(
-        "/api/mdm/devices/search?searchby={}&id={}&page={}&pagesize={}",
-        search_by, query, page, page_size
+        "/api/mdm/devices/search?searchby={}&{}={}&page={}&pagesize={}",
+        search_by, param_name, query, page, page_size
     );
 
     let resp: DeviceSearchResponse = client.get(&path).await?;

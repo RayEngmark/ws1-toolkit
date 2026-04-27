@@ -24,10 +24,8 @@ src-tauri/src/
 
 src/
   ipc/
-    client.ts      Typed wrapper around invoke(); falls through to mock.ts
-                   when not running under Tauri (browser dev mode)
+    client.ts      Typed wrapper around invoke()
     contracts.ts   Shared TS types — must mirror Rust serde shapes
-    mock.ts        Browser-dev mock data
   state/
     connectionStore.ts   OAuth credentials + connection status
     selectionStore.ts    Global device selection (persists across modules)
@@ -90,8 +88,7 @@ The user has rejected several redesigns for being "AI slop" or "SaaS dashboard."
 
 ## Dev workflow
 
-- **Full app:** `npm run tauri dev` — launches the Tauri shell with the Rust backend. Vite serves at `localhost:1420`; over WiFi the user reaches it at `192.168.68.105:1420`.
-- **Browser-only:** `npm run dev` — runs Vite alone. The `IS_TAURI` check in `ipc/client.ts` falls through to `ipc/mock.ts`, so all data is fake. Useful for layout/styling work; useless for verifying real API behaviour.
+- **Full app:** `npm run tauri dev` — launches the Tauri shell with the Rust backend. Vite serves at `localhost:1420`; over WiFi the user reaches it at `192.168.68.105:1420`. There's no browser-only mock mode anymore — every IPC call goes to Rust.
 - **Type check:** `npx tsc --noEmit` (this is what CI runs as part of `npm run build`).
 - **Rust check:** `cargo check` from `src-tauri/`. There's one known-ignorable `token_type` dead-code warning.
 - **Catalog rebuild:** after editing `docs/ws1-mdm-v1-api-source.md`, run `node scripts/build-catalog.mjs` to regenerate `src/library/catalog.ts`.

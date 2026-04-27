@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import * as mock from "./mock";
 import type {
   App,
   AppPushMode,
@@ -16,9 +15,6 @@ import type {
 
 export type { Device } from "./contracts";
 
-const IS_TAURI =
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-
 async function ipc<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   try {
     return await invoke<T>(cmd, args);
@@ -30,16 +26,15 @@ async function ipc<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 // -- Connection --
 
 export const saveCredentials = (config: WS1Config): Promise<void> =>
-  IS_TAURI ? ipc("save_credentials", { config }) : mock.saveCredentials(config);
+  ipc("save_credentials", { config });
 
 export const loadCredentials = (): Promise<WS1Config | null> =>
-  IS_TAURI ? ipc("load_credentials") : mock.loadCredentials();
+  ipc("load_credentials");
 
 export const testConnection = (): Promise<ConnectionInfo> =>
-  IS_TAURI ? ipc("test_connection") : mock.testConnection();
+  ipc("test_connection");
 
-export const clearCredentials = (): Promise<void> =>
-  IS_TAURI ? ipc("clear_credentials") : mock.clearCredentials();
+export const clearCredentials = (): Promise<void> => ipc("clear_credentials");
 
 // -- Devices --
 
@@ -49,41 +44,35 @@ export const searchDevices = (
   page: number,
   pageSize: number
 ): Promise<DeviceSearchResult> =>
-  IS_TAURI
-    ? ipc("search_devices", { query, searchBy, page, pageSize })
-    : mock.searchDevices(query, searchBy, page, pageSize);
+  ipc("search_devices", { query, searchBy, page, pageSize });
 
 export const getDeviceTags = (deviceId: number): Promise<Tag[]> =>
-  IS_TAURI ? ipc("get_device_tags", { deviceId }) : mock.getDeviceTags(deviceId);
+  ipc("get_device_tags", { deviceId });
 
 // -- Tags --
 
 export const getTags = (ogId: number): Promise<Tag[]> =>
-  IS_TAURI ? ipc("get_tags", { ogId }) : mock.getTags(ogId);
+  ipc("get_tags", { ogId });
 
 export const addTagsToDevices = (
   tagId: number,
   deviceIds: number[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("add_tags_to_devices", { tagId, deviceIds })
-    : mock.addTagsToDevices(tagId, deviceIds);
+  ipc("add_tags_to_devices", { tagId, deviceIds });
 
 export const removeTagsFromDevices = (
   tagId: number,
   deviceIds: number[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("remove_tags_from_devices", { tagId, deviceIds })
-    : mock.removeTagsFromDevices(tagId, deviceIds);
+  ipc("remove_tags_from_devices", { tagId, deviceIds });
 
 export const createTag = (name: string, ogId: number): Promise<Tag> =>
-  IS_TAURI ? ipc("create_tag", { name, ogId }) : mock.createTag(name, ogId);
+  ipc("create_tag", { name, ogId });
 
 // -- Organization Groups --
 
 export const searchOrgGroups = (): Promise<OrgGroup[]> =>
-  IS_TAURI ? ipc("search_org_groups") : mock.searchOrgGroups();
+  ipc("search_org_groups");
 
 /**
  * Get devices in an OG and all its descendants. WS1 device search supports
@@ -91,44 +80,35 @@ export const searchOrgGroups = (): Promise<OrgGroup[]> =>
  * tenant config says so. Backend implements this via `/api/mdm/devices/search?lgid=…&pagesize=…`.
  */
 export const getDevicesInOg = (ogId: number): Promise<Device[]> =>
-  IS_TAURI ? ipc("get_devices_in_og", { ogId }) : mock.getDevicesInOg(ogId);
+  ipc("get_devices_in_og", { ogId });
 
 export const getOgChildren = (ogId: number): Promise<OrgGroup[]> =>
-  IS_TAURI ? ipc("get_og_children", { ogId }) : mock.getOgChildren(ogId);
+  ipc("get_og_children", { ogId });
 
 export const moveDeviceToOg = (
   deviceId: number,
   targetOgId: number
-): Promise<void> =>
-  IS_TAURI
-    ? ipc("move_device_to_og", { deviceId, targetOgId })
-    : mock.moveDeviceToOg();
+): Promise<void> => ipc("move_device_to_og", { deviceId, targetOgId });
 
 export const bulkMoveDevices = (
   deviceIds: number[],
   targetOgId: number
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("bulk_move_devices", { deviceIds, targetOgId })
-    : mock.bulkMoveDevices(deviceIds, targetOgId);
+  ipc("bulk_move_devices", { deviceIds, targetOgId });
 
 // -- Profiles --
 
-export const getProfiles = (): Promise<Profile[]> =>
-  IS_TAURI ? ipc("get_profiles") : mock.getProfiles();
+export const getProfiles = (): Promise<Profile[]> => ipc("get_profiles");
 
 export const assignProfile = (
   profileId: number,
   deviceIds: number[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("assign_profile", { profileId, deviceIds })
-    : mock.assignProfile(profileId, deviceIds);
+  ipc("assign_profile", { profileId, deviceIds });
 
 // -- Apps --
 
-export const getApps = (): Promise<App[]> =>
-  IS_TAURI ? ipc("get_apps") : mock.getApps();
+export const getApps = (): Promise<App[]> => ipc("get_apps");
 
 /**
  * Assign an internal app to one or more smart groups.
@@ -141,9 +121,7 @@ export const assignAppToSmartGroup = (
   smartGroupIds: number[],
   pushMode: AppPushMode
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("assign_app_to_smart_group", { appId, smartGroupIds, pushMode })
-    : mock.assignAppToSmartGroup(appId, smartGroupIds, pushMode);
+  ipc("assign_app_to_smart_group", { appId, smartGroupIds, pushMode });
 
 // -- Profile install/remove (per-device, via SerialNumber) --
 
@@ -155,28 +133,24 @@ export const installProfileOnDevices = (
   profileId: number,
   serialNumbers: string[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("install_profile_on_devices", { profileId, serialNumbers })
-    : mock.installProfileOnDevices(profileId, serialNumbers);
+  ipc("install_profile_on_devices", { profileId, serialNumbers });
 
 export const removeProfileFromDevices = (
   profileId: number,
   serialNumbers: string[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("remove_profile_from_devices", { profileId, serialNumbers })
-    : mock.removeProfileFromDevices(profileId, serialNumbers);
+  ipc("remove_profile_from_devices", { profileId, serialNumbers });
 
 // -- Smart Groups --
 
 export const searchSmartGroups = (): Promise<SmartGroup[]> =>
-  IS_TAURI ? ipc("search_smart_groups") : mock.searchSmartGroups();
+  ipc("search_smart_groups");
 
 export const getSmartGroup = (id: number): Promise<SmartGroup | null> =>
-  IS_TAURI ? ipc("get_smart_group", { id }) : mock.getSmartGroup(id);
+  ipc("get_smart_group", { id });
 
 export const getSmartGroupDevices = (id: number): Promise<Device[]> =>
-  IS_TAURI ? ipc("get_smart_group_devices", { id }) : mock.getSmartGroupDevices(id);
+  ipc("get_smart_group_devices", { id });
 
 /**
  * Add devices to a smart group via `POST /api/mdm/smartgroups/{id}/update`
@@ -186,17 +160,13 @@ export const addDevicesToSmartGroup = (
   smartGroupId: number,
   deviceIds: number[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("add_devices_to_smart_group", { smartGroupId, deviceIds })
-    : mock.addDevicesToSmartGroup(smartGroupId, deviceIds);
+  ipc("add_devices_to_smart_group", { smartGroupId, deviceIds });
 
 export const removeDevicesFromSmartGroup = (
   smartGroupId: number,
   deviceIds: number[]
 ): Promise<BulkActionResult> =>
-  IS_TAURI
-    ? ipc("remove_devices_from_smart_group", { smartGroupId, deviceIds })
-    : mock.removeDevicesFromSmartGroup(smartGroupId, deviceIds);
+  ipc("remove_devices_from_smart_group", { smartGroupId, deviceIds });
 
 // -- Raw endpoint runner (Library tab) --
 
@@ -212,15 +182,8 @@ export interface RawResponse {
   body: unknown;
 }
 
-/**
- * Run an arbitrary endpoint against the connected tenant — used by the API
- * Library tab. In dev (vite-only) this returns a mock; real Tauri build
- * forwards to the WS1 client.
- */
 export const runRawEndpoint = (req: RawRequest): Promise<RawResponse> =>
-  IS_TAURI
-    ? ipc("run_raw_endpoint", { request: req })
-    : mock.runRawEndpoint(req);
+  ipc("run_raw_endpoint", { request: req });
 
 export interface SpecFetchResult {
   sourceUrl: string;
@@ -231,12 +194,11 @@ export interface SpecFetchResult {
  * Try to fetch the WS1 MDM API V1 Swagger / OpenAPI spec from the connected
  * tenant. Pass an optional custom URL to override auto-discovery.
  */
-export const fetchApiSpec = (
-  customUrl?: string
-): Promise<SpecFetchResult> =>
-  IS_TAURI
-    ? ipc("fetch_api_spec", { customUrl: customUrl ?? null }).then((r: any) => ({
-        sourceUrl: r.sourcePath ?? r.source_url ?? "",
-        spec: r.spec,
-      }))
-    : mock.fetchApiSpec(customUrl);
+export const fetchApiSpec = (customUrl?: string): Promise<SpecFetchResult> =>
+  ipc<{ sourcePath?: string; source_url?: string; spec: unknown }>(
+    "fetch_api_spec",
+    { customUrl: customUrl ?? null }
+  ).then((r) => ({
+    sourceUrl: r.sourcePath ?? r.source_url ?? "",
+    spec: r.spec,
+  }));
