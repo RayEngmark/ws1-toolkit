@@ -14,7 +14,7 @@ pub struct DeviceSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DeviceSummary {
-    pub id: Option<IdValue>,
+    pub id: Option<FlexId>,
     pub uuid: Option<String>,
     pub udid: Option<String>,
     pub serial_number: Option<String>,
@@ -31,7 +31,7 @@ pub struct DeviceSummary {
     pub ownership: Option<String>,
     pub enrollment_status: Option<String>,
     #[serde(rename = "LocationGroupId")]
-    pub location_group_id: Option<IdValue>,
+    pub location_group_id: Option<FlexId>,
     #[serde(rename = "LocationGroupName")]
     pub location_group_name: Option<String>,
 }
@@ -40,6 +40,25 @@ pub struct DeviceSummary {
 #[serde(rename_all = "PascalCase")]
 pub struct IdValue {
     pub value: Option<i64>,
+}
+
+/// WS1 returns `Id` either as a bare integer or as `{ Value: <int> }`
+/// depending on the endpoint and tenant version. Accept both shapes
+/// without falling back silently to 0 — `extract_id` exposes whatever
+/// the server actually sent.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FlexId {
+    Plain(i64),
+    Wrapped(IdValue),
+}
+
+pub fn extract_id(f: Option<FlexId>) -> i64 {
+    match f {
+        Some(FlexId::Plain(n)) => n,
+        Some(FlexId::Wrapped(IdValue { value })) => value.unwrap_or_default(),
+        None => 0,
+    }
 }
 
 // Flattened device for frontend consumption. Field set must mirror the TS
@@ -73,7 +92,7 @@ pub struct Device {
 impl From<DeviceSummary> for Device {
     fn from(d: DeviceSummary) -> Self {
         Self {
-            id: d.id.and_then(|id| id.value).unwrap_or_default(),
+            id: extract_id(d.id),
             uuid: d.uuid.unwrap_or_default(),
             udid: d.udid.unwrap_or_default(),
             serial_number: d.serial_number.unwrap_or_default(),
@@ -89,10 +108,7 @@ impl From<DeviceSummary> for Device {
             last_seen: d.last_seen.unwrap_or_default(),
             ownership: d.ownership.unwrap_or_default(),
             enrollment_status: d.enrollment_status.unwrap_or_default(),
-            og_id: d
-                .location_group_id
-                .and_then(|id| id.value)
-                .unwrap_or_default(),
+            og_id: extract_id(d.location_group_id),
             og_name: d.location_group_name.unwrap_or_default(),
         }
     }
@@ -118,10 +134,15 @@ pub struct TagSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct TagEntry {
-    pub id: Option<IdValue>,
+    pub id: Option<FlexId>,
     pub tag_name: Option<String>,
     pub tag_type: Option<i32>,
-    pub tag_av_assigned: Option<i32>,
+    /// Older tenants used `TagAvAssigned`; the systemv1 spec doesn't list a
+    /// device-count field at all on the per-OG /groups/{id}/tags response.
+    /// Keep the alias so we surface a count when WS1 sends one and zero when
+    /// it doesn't — never fabricated.
+    #[serde(alias = "TagAvAssigned", alias = "AssignedDeviceCount")]
+    pub device_count: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,9 +156,9 @@ pub struct Tag {
 impl From<TagEntry> for Tag {
     fn from(t: TagEntry) -> Self {
         Self {
-            id: t.id.and_then(|id| id.value).unwrap_or(0),
+            id: extract_id(t.id),
             tag_name: t.tag_name.unwrap_or_default(),
-            device_count: t.tag_av_assigned.unwrap_or(0),
+            device_count: t.device_count.unwrap_or_default(),
         }
     }
 }
@@ -158,7 +179,7 @@ pub struct OGSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct OGEntry {
-    pub id: Option<i64>,
+    pub id: Option<FlexId>,
     pub name: Option<String>,
     pub group_id: Option<String>,
     pub location_group_type: Option<String>,
@@ -169,7 +190,7 @@ pub struct OGEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ParentOG {
-    pub id: Option<IdValue>,
+    pub id: Option<FlexId>,
     pub name: Option<String>,
 }
 
@@ -187,11 +208,11 @@ pub struct OrgGroup {
 impl From<OGEntry> for OrgGroup {
     fn from(og: OGEntry) -> Self {
         Self {
-            id: og.id.unwrap_or(0),
+            id: extract_id(og.id),
             name: og.name.unwrap_or_default(),
             group_id: og.group_id.unwrap_or_default(),
             og_type: og.location_group_type.unwrap_or_default(),
-            parent_id: og.parent_location_group.and_then(|p| p.id.and_then(|id| id.value)),
+            parent_id: og.parent_location_group.map(|p| extract_id(p.id)),
             children: og
                 .children
                 .unwrap_or_default()
@@ -213,7 +234,7 @@ pub struct ProfileSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ProfileEntry {
-    pub id: Option<IdValue>,
+    pub id: Option<FlexId>,
     pub profile_name: Option<String>,
     pub profile_type: Option<String>,
     pub platform: Option<String>,
@@ -235,7 +256,7 @@ pub struct Profile {
 impl From<ProfileEntry> for Profile {
     fn from(p: ProfileEntry) -> Self {
         Self {
-            id: p.id.and_then(|id| id.value).unwrap_or(0),
+            id: extract_id(p.id),
             name: p.profile_name.unwrap_or_default(),
             description: p.description.unwrap_or_default(),
             platform: p.platform.unwrap_or_default(),
@@ -256,7 +277,7 @@ pub struct AppSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AppEntry {
-    pub id: Option<IdValue>,
+    pub id: Option<FlexId>,
     pub application_name: Option<String>,
     pub bundle_id: Option<String>,
     pub app_version: Option<String>,
@@ -280,7 +301,7 @@ pub struct App {
 impl From<AppEntry> for App {
     fn from(a: AppEntry) -> Self {
         Self {
-            id: a.id.and_then(|id| id.value).unwrap_or(0),
+            id: extract_id(a.id),
             name: a.application_name.unwrap_or_default(),
             bundle_id: a.bundle_id.unwrap_or_default(),
             version: a.app_version.unwrap_or_default(),
@@ -305,7 +326,7 @@ pub struct SmartGroupEntry {
     // Field names verified against the live tenant spec at
     // /api/help/Docs/mdmv1 → SmartGroupSearchModel.
     #[serde(rename = "SmartGroupID")]
-    pub smart_group_id: Option<i64>,
+    pub smart_group_id: Option<FlexId>,
     pub name: Option<String>,
     // Search endpoint returns ManagedByOrganizationGroupId as a *string*
     // (decimal id serialized as text). Alias kept for older tenants where
@@ -345,7 +366,7 @@ impl From<SmartGroupEntry> for SmartGroup {
         // a placeholder string ("Unknown" / "None") because the contract
         // says: if WS1 didn't send it, we don't pretend it did.
         Self {
-            id: s.smart_group_id.unwrap_or_default(),
+            id: extract_id(s.smart_group_id),
             name: s.name.unwrap_or_default(),
             criteria_type: s.criteria_type.unwrap_or_default(),
             // The string-id from the server -> i64 in our typed shape; if

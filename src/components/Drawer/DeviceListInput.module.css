@@ -41,6 +41,44 @@
   font-style: italic;
 }
 
+.resolvedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.resolvedRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.resolvedName {
+  font-size: 12px;
+  color: var(--fg-0);
+  font-weight: 500;
+}
+
+.resolvedMeta {
+  font-size: 10px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+}
+
+.resolvedMore {
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--fg-3);
+  font-style: italic;
+  font-family: var(--font-mono);
+}
+
 .misses {
   font-size: 11px;
   font-family: var(--font-mono);

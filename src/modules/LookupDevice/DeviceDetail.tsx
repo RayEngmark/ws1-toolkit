@@ -38,6 +38,7 @@ export function DeviceDetail({
       </div>
 
       <QuickActions device={device} />
+      <DeviceDrawerLaunchers device={device} />
 
       <div className={styles.tabs}>
         <button
@@ -260,6 +261,65 @@ const QUICK_ACTIONS: QuickAction[] = [
       }),
   },
 ];
+
+/* -------------------- Drawer launchers (per-device) -------------------- */
+
+/**
+ * Second action row: opens a drawer with this device's id (and serial,
+ * for profile install) already locked, so the operator skips the device
+ * picker and only chooses the action target (tag / OG / SG / profile).
+ */
+function DeviceDrawerLaunchers({ device }: { device: Device }) {
+  const openDrawer = useUIStore((s) => s.openDrawer);
+  const ids = [device.id];
+  const serials = device.serialNumber ? [device.serialNumber] : [];
+
+  return (
+    <div className={styles.launcherRow}>
+      <button
+        className={styles.launcherBtn}
+        onClick={() => openDrawer("apply-tag", { deviceIds: ids, mode: "add" })}
+      >
+        Tag
+      </button>
+      <button
+        className={styles.launcherBtn}
+        onClick={() => openDrawer("move-og", { deviceIds: ids })}
+      >
+        Move OG
+      </button>
+      <button
+        className={styles.launcherBtn}
+        onClick={() => openDrawer("add-to-sg", { deviceIds: ids })}
+      >
+        Add to SG
+      </button>
+      <button
+        className={styles.launcherBtn}
+        onClick={() => openDrawer("remove-from-sg", { deviceIds: ids })}
+      >
+        Remove from SG
+      </button>
+      <button
+        className={styles.launcherBtn}
+        onClick={() =>
+          openDrawer("assign-profile", {
+            deviceIds: ids,
+            serialNumbers: serials,
+          })
+        }
+        disabled={serials.length === 0}
+        title={
+          serials.length === 0
+            ? "Profile install requires a serial number"
+            : "Install a profile on this device"
+        }
+      >
+        Push profile
+      </button>
+    </div>
+  );
+}
 
 function QuickActions({ device }: { device: Device }) {
   const addToast = useUIStore((s) => s.addToast);

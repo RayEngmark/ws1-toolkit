@@ -107,6 +107,39 @@
   cursor: not-allowed;
 }
 
+/* ---- Drawer launcher row (Tag / Move OG / Add SG / etc.) ---- */
+.launcherRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.launcherBtn {
+  height: 22px;
+  padding: 0 10px;
+  background: var(--bg-0);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.launcherBtn:hover:not(:disabled) {
+  background: var(--bg-2);
+  border-color: var(--accent);
+}
+
+.launcherBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---- Tabs ---- */
 .tabs {
   display: flex;

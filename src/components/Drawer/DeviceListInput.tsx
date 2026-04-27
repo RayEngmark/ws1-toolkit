@@ -81,6 +81,27 @@ export function DeviceListInput({
           </>
         )}
       </div>
+      {resolved.length > 0 && !busy && (
+        <ul className={styles.resolvedList}>
+          {resolved.slice(0, 50).map((d) => (
+            <li key={d.id} className={styles.resolvedRow}>
+              <span className={styles.resolvedName}>
+                {d.friendlyName || d.serialNumber || `device ${d.id}`}
+              </span>
+              <span className={styles.resolvedMeta}>
+                {d.serialNumber}
+                {d.userName ? ` · ${d.userName}` : ""}
+                {d.platform ? ` · ${d.platform}` : ""}
+              </span>
+            </li>
+          ))}
+          {resolved.length > 50 && (
+            <li className={styles.resolvedMore}>
+              …{resolved.length - 50} more
+            </li>
+          )}
+        </ul>
+      )}
       {missing.length > 0 && !busy && (
         <details className={styles.misses}>
           <summary>show {missing.length} unresolved</summary>
