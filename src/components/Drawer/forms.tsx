@@ -325,6 +325,73 @@ export function AssignProfileDrawer({
   );
 }
 
+/* -------------------- Create tag -------------------- */
+
+export function CreateTagDrawer({
+  ctx,
+}: {
+  ctx: { ogId?: number };
+}) {
+  const close = useUIStore((s) => s.closeDrawer);
+  const addToast = useUIStore((s) => s.addToast);
+  const [busy, setBusy] = useState(false);
+  const [name, setName] = useState("");
+  const [ogs, setOgs] = useState<OrgGroup[]>([]);
+  const [ogId, setOgId] = useState<number | null>(ctx.ogId ?? null);
+
+  useEffect(() => {
+    api.searchOrgGroups().then((tree) => {
+      const flat = flatten(tree);
+      setOgs(flat);
+      if (ogId === null && flat.length > 0) setOgId(flat[0].id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ready = name.trim().length > 0 && ogId !== null && !busy;
+
+  const fire = async () => {
+    if (!ogId) return;
+    setBusy(true);
+    try {
+      const tag = await api.createTag(name.trim(), ogId);
+      addToast(`Created tag "${tag.tagName}"`, "success");
+      close();
+    } catch (e) {
+      addToast(e instanceof Error ? e.message : "create failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Drawer
+      title="New tag"
+      footer={<ConfirmFooter ready={ready} busy={busy} onFire={fire} label="Create" />}
+    >
+      <FormSection label="Name">
+        <input
+          className={styles.textInput}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Loaner · Staff laptops · Q3 imaged"
+          autoFocus
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </FormSection>
+      <TargetPicker
+        label="Organization group"
+        emptyHint="pick the OG this tag belongs to"
+        items={ogs.map(toOgItem)}
+        selectedId={ogId}
+        onSelect={setOgId}
+      />
+    </Drawer>
+  );
+}
+
 /* -------------------- Assign app to smart group -------------------- */
 
 export function AssignAppDrawer({

@@ -25,6 +25,7 @@ export type DrawerKind =
   | "remove-from-sg"
   | "assign-profile"
   | "assign-app"
+  | "create-tag"
   | "delete-sg";
 
 export interface DrawerState {

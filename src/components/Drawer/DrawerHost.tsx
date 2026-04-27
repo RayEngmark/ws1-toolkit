@@ -3,6 +3,7 @@ import {
   ApplyTagDrawer,
   AssignAppDrawer,
   AssignProfileDrawer,
+  CreateTagDrawer,
   MoveOgDrawer,
   SmartGroupMembershipDrawer,
 } from "./forms";
@@ -36,6 +37,8 @@ export function DrawerHost() {
       return <AssignProfileDrawer ctx={drawer.ctx as never} />;
     case "assign-app":
       return <AssignAppDrawer ctx={drawer.ctx as never} />;
+    case "create-tag":
+      return <CreateTagDrawer ctx={drawer.ctx as never} />;
     case "delete-sg":
       // Not yet wired — the IPC for SG deletion isn't on the JS side. Close
       // silently rather than render a broken form.

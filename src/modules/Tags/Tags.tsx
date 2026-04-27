@@ -112,6 +112,15 @@ export function Tags() {
               </option>
             ))}
           </select>
+          <button
+            className={styles.newTagBtn}
+            onClick={() =>
+              openDrawer("create-tag", { ogId: ogId ?? undefined })
+            }
+            type="button"
+          >
+            + New tag
+          </button>
         </div>
       }
     />
