@@ -1,0 +1,56 @@
+.detail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.detailHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detailName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+
+.detailSub {
+  font-size: 11px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  row-gap: 6px;
+  column-gap: 12px;
+}
+
+.row {
+  display: contents;
+}
+
+.rowLabel {
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+
+.rowValue {
+  font-size: 12px;
+  color: var(--fg-0);
+  word-break: break-all;
+}
+
+.rowMono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}

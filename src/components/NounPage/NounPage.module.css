@@ -1,0 +1,133 @@
+.grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-1);
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-0);
+}
+
+.controls {
+  padding: 6px 10px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filterRow {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filter {
+  width: 100%;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--bg-0);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+
+.filter:focus {
+  border-color: var(--accent);
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-2);
+  flex-shrink: 0;
+}
+
+.listCount {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg-3);
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  text-align: left;
+}
+
+.row:hover {
+  background: var(--bg-2);
+}
+
+.rowPicked {
+  background: var(--accent-dim) !important;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.empty,
+.error {
+  padding: 16px;
+  font-size: 12px;
+  color: var(--fg-3);
+  font-style: italic;
+  text-align: center;
+}
+
+.error {
+  color: var(--danger, #f44336);
+  font-style: normal;
+  font-family: var(--font-mono);
+}
+
+.detailEmpty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detailEmptyText {
+  color: var(--fg-3);
+  font-style: italic;
+  font-size: 12px;
+}

@@ -6,19 +6,23 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import { StatusBar } from "../StatusBar/StatusBar";
 import { ToastContainer } from "../Toast/Toast";
 import { FooterSlotProvider } from "./FooterSlot";
-import { ComingSoon } from "../ComingSoon/ComingSoon";
 import { Settings } from "../../modules/Settings/Settings";
 import { LookupDevice } from "../../modules/LookupDevice/LookupDevice";
+import { SmartGroups } from "../../modules/SmartGroups/SmartGroups";
+import { OrgGroups } from "../../modules/OrgGroups/OrgGroups";
+import { Tags } from "../../modules/Tags/Tags";
+import { Profiles } from "../../modules/Profiles/Profiles";
+import { Apps } from "../../modules/Apps/Apps";
 import { LibraryShell } from "../../library/LibraryShell";
 import styles from "./AppShell.module.css";
 
 const ROUTE_VIEW: Record<Route, () => React.ReactElement> = {
   devices: () => <LookupDevice />,
-  smartgroups: () => <ComingSoon noun="Smart Groups" />,
-  ogs: () => <ComingSoon noun="Org Groups" />,
-  tags: () => <ComingSoon noun="Tags" />,
-  profiles: () => <ComingSoon noun="Profiles" />,
-  apps: () => <ComingSoon noun="Apps" />,
+  smartgroups: () => <SmartGroups />,
+  ogs: () => <OrgGroups />,
+  tags: () => <Tags />,
+  profiles: () => <Profiles />,
+  apps: () => <Apps />,
   "api-explorer": () => <LibraryShell />,
   settings: () => <Settings />,
 };

@@ -1,0 +1,15 @@
+.rowName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-0);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  font-size: 11px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+}
