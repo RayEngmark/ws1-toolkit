@@ -140,9 +140,21 @@ impl<'a> WS1Client<'a> {
 
         let url = format!("{}{}", self.base_url(), path);
         let headers = self.get_headers().await?;
-        let mut req = self.state.client.request(parsed_method, &url).headers(headers);
+        let mut req = self
+            .state
+            .client
+            .request(parsed_method.clone(), &url)
+            .headers(headers);
         if let Some(body) = body {
             req = req.json(body);
+        } else if matches!(
+            parsed_method,
+            Method::POST | Method::PUT | Method::PATCH
+        ) {
+            // WS1's IIS/Kestrel front rejects body-less POST/PUT/PATCH with
+            // 411 Length Required. Force an empty body so Content-Length: 0
+            // is sent.
+            req = req.body(Vec::<u8>::new());
         }
 
         let resp = req.send().await?;
