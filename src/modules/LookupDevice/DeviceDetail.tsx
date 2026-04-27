@@ -65,47 +65,129 @@ export function DetailPlaceholder() {
 /* -------------------- Overview tab -------------------- */
 
 function OverviewTab({ device }: { device: Device }) {
+  const lastSeen = device.lastSeen ? new Date(device.lastSeen) : null;
+  const lastSeenRel = lastSeen ? relativeTime(lastSeen) : "—";
+  const lastSeenAbs = lastSeen ? lastSeen.toLocaleString() : "";
+
   return (
-    <div className={styles.detailGrid}>
-      <DetailRow label="Serial" value={device.serialNumber} mono />
-      <DetailRow label="UUID" value={device.udid || device.uuid} mono />
-      {device.imei && <DetailRow label="IMEI" value={device.imei} mono />}
-      {device.macAddress && (
+    <div className={styles.overview}>
+      <div className={styles.statusBand}>
+        <StatusPill
+          label={device.enrollmentStatus || "Unknown"}
+          tone={
+            device.enrollmentStatus === "Enrolled"
+              ? "ok"
+              : device.enrollmentStatus
+                ? "warn"
+                : "muted"
+          }
+        />
+        <StatusPill
+          label={device.ownership || "—"}
+          tone={device.ownership ? "neutral" : "muted"}
+        />
+        <span className={styles.statusInline}>{device.platform}</span>
+        <span className={styles.statusDivider} />
+        <span className={styles.statusInline}>{device.os}</span>
+        <span className={styles.statusDivider} />
+        <span className={styles.statusInline}>{device.model}</span>
+      </div>
+
+      <Section label="Identity">
+        <DetailRow label="Serial" value={device.serialNumber} mono />
+        <DetailRow label="UDID" value={device.udid} mono />
+        <DetailRow label="UUID" value={device.uuid} mono />
+        <DetailRow label="IMEI" value={device.imei} mono />
         <DetailRow label="MAC" value={device.macAddress} mono />
-      )}
-      {device.assetNumber && (
-        <DetailRow label="Asset" value={device.assetNumber} mono />
-      )}
-      <DetailRow label="OS" value={device.os} />
-      <DetailRow label="Platform" value={device.platform} />
-      <DetailRow label="OG" value={device.ogName} />
-      <DetailRow label="Ownership" value={device.ownership} />
-      <DetailRow label="Enrolled" value={device.enrollmentStatus} />
-      <DetailRow
-        label="Last seen"
-        value={new Date(device.lastSeen).toLocaleString()}
-      />
+        <DetailRow label="Asset #" value={device.assetNumber} mono />
+      </Section>
+
+      <Section label="Assignment">
+        <DetailRow label="User" value={device.userName} mono />
+        <DetailRow
+          label="OG"
+          value={device.ogName}
+          aside={device.ogId ? `id ${device.ogId}` : undefined}
+        />
+      </Section>
+
+      <Section label="Timing">
+        <DetailRow
+          label="Last seen"
+          value={lastSeenRel}
+          aside={lastSeenAbs || undefined}
+        />
+      </Section>
     </div>
   );
+}
+
+function Section({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionHead}>{label}</div>
+      <div className={styles.sectionBody}>{children}</div>
+    </section>
+  );
+}
+
+function StatusPill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "ok" | "warn" | "neutral" | "muted";
+}) {
+  return <span className={`${styles.pill} ${styles[`pill_${tone}`]}`}>{label}</span>;
 }
 
 function DetailRow({
   label,
   value,
   mono,
+  aside,
 }: {
   label: string;
   value: string;
   mono?: boolean;
+  aside?: string;
 }) {
+  const display = value && value.trim() ? value : "—";
+  const isEmpty = display === "—";
   return (
     <div className={styles.row}>
       <span className={styles.rowLabel}>{label}</span>
-      <span className={`${styles.rowValue} ${mono ? styles.rowMono : ""}`}>
-        {value || "—"}
+      <span
+        className={`${styles.rowValue} ${mono ? styles.rowMono : ""} ${isEmpty ? styles.rowEmpty : ""}`}
+      >
+        {display}
+        {aside && !isEmpty && (
+          <span className={styles.rowAside}>{aside}</span>
+        )}
       </span>
     </div>
   );
+}
+
+/** "5 min ago" / "2 hr ago" / "3 d ago" / absolute if older than 30 days. */
+function relativeTime(d: Date): string {
+  const now = Date.now();
+  const ms = now - d.getTime();
+  if (ms < 0) return d.toLocaleDateString();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hr ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day} d ago`;
+  return d.toLocaleDateString();
 }
 
 /* -------------------- Quick actions -------------------- */
