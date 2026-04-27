@@ -53,6 +53,11 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Set build version
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const f='src-tauri/tauri.conf.json';const j=JSON.parse(fs.readFileSync(f,'utf8'));j.version='0.1.${{ github.run_number }}';fs.writeFileSync(f,JSON.stringify(j,null,2));"
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         with:
