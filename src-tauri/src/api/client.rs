@@ -166,9 +166,14 @@ impl<'a> WS1Client<'a> {
         })
     }
 
-    /// Test connection by hitting /api/system/info
+    /// Test connection by hitting a known-good lightweight endpoint.
+    /// /api/system/info was retired post-Omnissa-rebrand on some tenants;
+    /// /api/system/groups/search is what the rest of the app uses.
     pub async fn test_connection(&self) -> Result<(), AppError> {
-        let url = format!("{}/api/system/info", self.base_url());
+        let url = format!(
+            "{}/api/system/groups/search?orderby=name&pagesize=1",
+            self.base_url()
+        );
         let headers = self.get_headers().await?;
 
         let resp = self.state.client.get(&url).headers(headers).send().await?;

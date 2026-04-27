@@ -19,6 +19,7 @@ interface ConnectionState {
   loadCredentials: () => Promise<void>;
   saveCredentials: () => Promise<void>;
   testConnection: () => Promise<ConnectionInfo>;
+  connect: () => Promise<ConnectionInfo>;
   clearCredentials: () => Promise<void>;
 }
 
@@ -92,6 +93,33 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       return { connected: false, error: msg };
     } finally {
       set({ isTesting: false });
+    }
+  },
+
+  connect: async () => {
+    const s = get();
+    set({ isSaving: true, isTesting: true, connectionError: null });
+    try {
+      await api.saveCredentials({
+        tenantUrl: s.tenantUrl.trim(),
+        apiKey: s.apiKey.trim(),
+        clientId: s.clientId.trim(),
+        clientSecret: s.clientSecret.trim(),
+        tokenUrl: s.tokenUrl.trim(),
+        specUrl: s.specUrl.trim() || undefined,
+      });
+      const info = await api.testConnection();
+      set({
+        isConnected: info.connected,
+        connectionError: info.error ?? null,
+      });
+      return info;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Connection failed";
+      set({ isConnected: false, connectionError: msg });
+      return { connected: false, error: msg };
+    } finally {
+      set({ isSaving: false, isTesting: false });
     }
   },
 

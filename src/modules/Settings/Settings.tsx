@@ -12,14 +12,9 @@ export function Settings() {
   const catalog = useCatalogStore();
   const [isImporting, setIsImporting] = useState(false);
 
-  const handleSave = async () => {
-    await store.saveCredentials();
-    addToast("Credentials saved", "success");
-  };
-
-  const handleTest = async () => {
-    const info = await store.testConnection();
-    if (info.connected) addToast("Connection OK", "success");
+  const handleConnect = async () => {
+    const info = await store.connect();
+    if (info.connected) addToast("Connected", "success");
     else addToast(info.error ?? "Connection failed", "error");
   };
 
@@ -201,17 +196,14 @@ export function Settings() {
         <div className={styles.actions}>
           <button
             className={styles.actionPrimary}
-            onClick={handleTest}
-            disabled={store.isTesting || !canSubmit}
+            onClick={handleConnect}
+            disabled={store.isTesting || store.isSaving || !canSubmit}
           >
-            {store.isTesting ? "Testing…" : "Test Connection"}
-          </button>
-          <button
-            className={styles.action}
-            onClick={handleSave}
-            disabled={store.isSaving || !canSubmit}
-          >
-            {store.isSaving ? "Saving…" : "Save"}
+            {store.isTesting || store.isSaving
+              ? "Connecting…"
+              : store.isConnected
+                ? "Reconnect"
+                : "Connect"}
           </button>
           <div className={styles.actionSpacer} />
           <button className={styles.actionDanger} onClick={handleClear}>
