@@ -24,6 +24,9 @@ export function LookupDevice() {
   const [results, setResults] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [picked, setPicked] = useState<Device | null>(null);
+  const [compareB, setCompareB] = useState<Device | null>(null);
+  /** When true, the next device picked from the left list becomes B. */
+  const [pickingCompareB, setPickingCompareB] = useState(false);
   const [override, setOverride] = useState<SearchOverride>(
     () =>
       (typeof window !== "undefined" &&
@@ -242,28 +245,89 @@ export function LookupDevice() {
                       : "pick something on the left"}
                   </div>
                 ) : (
-                  results.map((d) => (
-                    <button
-                      key={d.id}
-                      className={`${styles.resultRow} ${picked?.id === d.id ? styles.resultPicked : ""}`}
-                      onClick={() => setPicked(d)}
-                    >
-                      <span className={styles.resultName}>
-                        {d.friendlyName || d.serialNumber}
-                      </span>
-                      <span className={styles.resultMeta}>
-                        {d.userName} · {d.platform}
-                      </span>
-                    </button>
-                  ))
+                  results.map((d) => {
+                    const isPicked = picked?.id === d.id;
+                    const isCompareB = compareB?.id === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        className={`${styles.resultRow} ${isPicked ? styles.resultPicked : ""} ${isCompareB ? styles.resultCompareB : ""}`}
+                        onClick={() => {
+                          if (pickingCompareB && d.id !== picked?.id) {
+                            setCompareB(d);
+                            setPickingCompareB(false);
+                          } else {
+                            setPicked(d);
+                          }
+                        }}
+                      >
+                        <span className={styles.resultName}>
+                          {d.friendlyName || d.serialNumber}
+                          {isPicked && (
+                            <span className={styles.resultBadge}>A</span>
+                          )}
+                          {isCompareB && (
+                            <span className={styles.resultBadge}>B</span>
+                          )}
+                        </span>
+                        <span className={styles.resultMeta}>
+                          {d.userName} · {d.platform}
+                        </span>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
           </div>
 
-        {/* Right column: detail panel */}
+        {/* Right column: detail panel (or two-pane compare) */}
         <div className={styles.rightCol}>
-          {picked ? <DeviceDetail device={picked} /> : <DetailPlaceholder />}
+          {pickingCompareB && picked && !compareB && (
+            <div className={styles.compareHint}>
+              Click another device on the left to compare with{" "}
+              <b>{picked.friendlyName || picked.serialNumber}</b>
+              <button
+                className={styles.compareCancel}
+                onClick={() => setPickingCompareB(false)}
+              >
+                cancel
+              </button>
+            </div>
+          )}
+          {picked && compareB ? (
+            <div className={styles.compareGrid}>
+              <div className={styles.compareCol}>
+                <div className={styles.compareLabel}>A</div>
+                <DeviceDetail device={picked} />
+              </div>
+              <div className={styles.compareCol}>
+                <div className={styles.compareLabel}>
+                  B
+                  <button
+                    className={styles.compareCancel}
+                    onClick={() => {
+                      setCompareB(null);
+                      setPickingCompareB(false);
+                    }}
+                  >
+                    exit compare
+                  </button>
+                </div>
+                <DeviceDetail device={compareB} />
+              </div>
+            </div>
+          ) : picked ? (
+            <DeviceDetail
+              device={picked}
+              onCompareStart={() => {
+                setCompareB(null);
+                setPickingCompareB(true);
+              }}
+            />
+          ) : (
+            <DetailPlaceholder />
+          )}
         </div>
       </div>
     </div>

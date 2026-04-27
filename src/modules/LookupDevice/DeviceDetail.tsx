@@ -6,7 +6,14 @@ import styles from "./DeviceDetail.module.css";
 
 type Tab = "overview" | "troubleshoot";
 
-export function DeviceDetail({ device }: { device: Device }) {
+export function DeviceDetail({
+  device,
+  onCompareStart,
+}: {
+  device: Device;
+  /** When set, render a "Compare" button in the header that triggers it. */
+  onCompareStart?: () => void;
+}) {
   const [tab, setTab] = useState<Tab>("overview");
   const compliant = device.complianceStatus === "Compliant";
 
@@ -44,6 +51,15 @@ export function DeviceDetail({ device }: { device: Device }) {
         >
           Troubleshoot
         </button>
+        {onCompareStart && (
+          <button
+            className={styles.compareTabBtn}
+            onClick={onCompareStart}
+            type="button"
+          >
+            Compare to…
+          </button>
+        )}
       </div>
 
       {tab === "overview" && <OverviewTab device={device} />}
