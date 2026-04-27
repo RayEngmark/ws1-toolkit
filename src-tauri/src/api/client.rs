@@ -152,9 +152,13 @@ impl<'a> WS1Client<'a> {
             Method::POST | Method::PUT | Method::PATCH
         ) {
             // WS1's IIS/Kestrel front rejects body-less POST/PUT/PATCH with
-            // 411 Length Required. Force an empty body so Content-Length: 0
-            // is sent.
-            req = req.body(Vec::<u8>::new());
+            // 411 Length Required. An empty Vec body alone sometimes still
+            // got 411 — reqwest can elect chunked encoding even with a
+            // known-zero-size body. Belt-and-suspenders: empty body AND an
+            // explicit Content-Length: 0 header.
+            req = req
+                .body(Vec::<u8>::new())
+                .header(reqwest::header::CONTENT_LENGTH, "0");
         }
 
         let resp = req.send().await?;
