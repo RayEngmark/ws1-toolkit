@@ -245,6 +245,10 @@ const QUICK_ACTIONS: QuickAction[] = [
       api.runRawEndpoint({
         method: "POST",
         path: `/api/mdm/devices/${d.id}/commands/finddevice`,
+        // The endpoint expects a FindDevice JSON body (Platform/Message/
+        // NumberOfRepetitions etc., all optional per the spec). Sending an
+        // empty {} satisfies the parser; the device handles defaults.
+        body: {},
       }),
   },
   {
