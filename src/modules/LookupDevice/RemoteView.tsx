@@ -26,6 +26,28 @@ interface Destination {
   model: string;
 }
 
+interface SavedDefault {
+  id: number;
+  name: string;
+}
+
+const LS_KEY = "remote-view-default";
+
+function loadSavedDefault(): SavedDefault | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.id === "number" && typeof parsed?.name === "string") {
+      return parsed;
+    }
+  } catch {
+    /* corrupt JSON in localStorage — treat as no default */
+  }
+  return null;
+}
+
 export function RemoteView({ device }: { device: Device }) {
   const addToast = useUIStore((s) => s.addToast);
   const [open, setOpen] = useState(false);
@@ -33,6 +55,9 @@ export function RemoteView({ device }: { device: Device }) {
   const [error, setError] = useState<string | null>(null);
   const [destinations, setDestinations] = useState<Destination[] | null>(null);
   const [firing, setFiring] = useState<number | null>(null);
+  const [savedDefault, setSavedDefault] = useState<SavedDefault | null>(() =>
+    loadSavedDefault()
+  );
   const ref = useRef<HTMLDivElement>(null);
 
   // Click-outside to close.
@@ -66,19 +91,23 @@ export function RemoteView({ device }: { device: Device }) {
       .finally(() => setLoading(false));
   }, [open, destinations, loading]);
 
-  const fire = async (dest: Destination) => {
+  const fire = async (dest: { id: number; name: string }) => {
     if (!device.serialNumber) {
       addToast("Device has no serial number — cannot start remote view", "error");
       return;
     }
-    setFiring(dest.destinationId);
+    setFiring(dest.id);
     try {
       const r = await api.runRawEndpoint({
         method: "POST",
-        path: `/api/mdm/devices/commands/remoteview?searchby=Serialnumber&id=${encodeURIComponent(device.serialNumber)}&remoteviewId=${dest.destinationId}`,
+        path: `/api/mdm/devices/commands/remoteview?searchby=Serialnumber&id=${encodeURIComponent(device.serialNumber)}&remoteviewId=${dest.id}`,
       });
       if (r.ok) {
-        addToast(`Remote view → ${dest.destinationName}`, "success");
+        addToast(`Remote view → ${dest.name}`, "success");
+        // Remember this destination as the default for next time.
+        const next = { id: dest.id, name: dest.name };
+        localStorage.setItem(LS_KEY, JSON.stringify(next));
+        setSavedDefault(next);
         setOpen(false);
       } else {
         addToast(`Remote view failed (HTTP ${r.status})`, "error");
@@ -93,18 +122,63 @@ export function RemoteView({ device }: { device: Device }) {
     }
   };
 
+  const fireDefault = () => {
+    if (!savedDefault) {
+      setOpen(true);
+      return;
+    }
+    fire(savedDefault);
+  };
+
+  const clearDefault = () => {
+    localStorage.removeItem(LS_KEY);
+    setSavedDefault(null);
+  };
+
   return (
     <div className={styles.wrap} ref={ref}>
-      <button
-        className={styles.btn}
-        onClick={() => setOpen((v) => !v)}
-        type="button"
-      >
-        {open ? "▾ Remote view" : "Remote view ▾"}
-      </button>
+      <div className={styles.split}>
+        <button
+          className={styles.btnMain}
+          onClick={fireDefault}
+          disabled={firing !== null}
+          type="button"
+          title={
+            savedDefault
+              ? `Start remote view to ${savedDefault.name}`
+              : "Pick a destination"
+          }
+        >
+          {firing !== null
+            ? "…"
+            : savedDefault
+              ? `Remote view → ${savedDefault.name}`
+              : "Remote view…"}
+        </button>
+        <button
+          className={styles.btnArrow}
+          onClick={() => setOpen((v) => !v)}
+          type="button"
+          title="Pick a different destination"
+          aria-label="Pick a different destination"
+        >
+          ▾
+        </button>
+      </div>
       {open && (
         <div className={styles.popover}>
-          <div className={styles.popHead}>Pick a destination</div>
+          <div className={styles.popHead}>
+            <span>Pick a destination</span>
+            {savedDefault && (
+              <button
+                className={styles.popHeadAction}
+                onClick={clearDefault}
+                type="button"
+              >
+                clear default
+              </button>
+            )}
+          </div>
           <div className={styles.popBody}>
             {loading && <div className={styles.muted}>loading…</div>}
             {error && <div className={styles.error}>{error}</div>}
@@ -114,26 +188,34 @@ export function RemoteView({ device }: { device: Device }) {
                 console
               </div>
             )}
-            {destinations?.map((d) => (
-              <button
-                key={d.destinationId}
-                className={styles.destRow}
-                onClick={() => fire(d)}
-                disabled={firing !== null}
-                type="button"
-              >
-                <span className={styles.destName}>
-                  {d.destinationName || `dest ${d.destinationId}`}
-                </span>
-                <span className={styles.destMeta}>
-                  {d.destinationIPAddress || d.destinationMacAddress || ""}
-                  {d.model ? ` · ${d.model}` : ""}
-                </span>
-                {firing === d.destinationId && (
-                  <span className={styles.firing}>sending…</span>
-                )}
-              </button>
-            ))}
+            {destinations?.map((d) => {
+              const isDefault = savedDefault?.id === d.destinationId;
+              return (
+                <button
+                  key={d.destinationId}
+                  className={`${styles.destRow} ${isDefault ? styles.destRowDefault : ""}`}
+                  onClick={() =>
+                    fire({ id: d.destinationId, name: d.destinationName })
+                  }
+                  disabled={firing !== null}
+                  type="button"
+                >
+                  <span className={styles.destName}>
+                    {d.destinationName || `dest ${d.destinationId}`}
+                    {isDefault && (
+                      <span className={styles.destDefault}>default</span>
+                    )}
+                  </span>
+                  <span className={styles.destMeta}>
+                    {d.destinationIPAddress || d.destinationMacAddress || ""}
+                    {d.model ? ` · ${d.model}` : ""}
+                  </span>
+                  {firing === d.destinationId && (
+                    <span className={styles.firing}>sending…</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

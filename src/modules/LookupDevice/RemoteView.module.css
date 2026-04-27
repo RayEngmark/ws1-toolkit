@@ -3,22 +3,51 @@
   flex: 1;
 }
 
-.btn {
-  width: 100%;
+.split {
+  display: flex;
   height: 24px;
+  width: 100%;
+}
+
+.btnMain {
+  flex: 1;
+  min-width: 0;
   padding: 0 10px;
   background: var(--bg-0);
   color: var(--fg-0);
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-right: none;
+  border-radius: 2px 0 0 2px;
   font-family: var(--font-ui);
   font-size: 11px;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.btn:hover {
+.btnArrow {
+  width: 22px;
+  background: var(--bg-0);
+  color: var(--fg-2);
+  border: 1px solid var(--border);
+  border-radius: 0 2px 2px 0;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btnMain:hover:not(:disabled),
+.btnArrow:hover:not(:disabled) {
   background: var(--bg-2);
   border-color: var(--accent);
+}
+
+.btnMain:disabled,
+.btnArrow:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .popover {
@@ -38,6 +67,10 @@
 }
 
 .popHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 10px;
   background: var(--bg-2);
   border-bottom: 1px solid var(--border);
@@ -46,6 +79,38 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--fg-2);
+}
+
+.popHeadAction {
+  background: transparent;
+  border: none;
+  color: var(--fg-3);
+  font-size: 10px;
+  text-transform: lowercase;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.popHeadAction:hover {
+  color: var(--accent);
+}
+
+.destRowDefault {
+  background: var(--accent-dim);
+}
+
+.destDefault {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 .popBody {
