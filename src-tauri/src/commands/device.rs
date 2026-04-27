@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::api::client::WS1Client;
-use crate::api::types::{Device, DeviceSearchResponse, DeviceSearchResult};
+use crate::api::types::{Device, DeviceSearchResponse, DeviceSearchResult, DeviceSummary};
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -15,40 +15,58 @@ pub async fn search_devices(
 ) -> Result<DeviceSearchResult, AppError> {
     let client = WS1Client::from_state(&state).await?;
 
-    // The `id=` query param only matches WS1's internal numeric device ID —
-    // passing a serial/IMEI/MAC/UUID into it gets silently ignored and the
-    // server returns all devices. Use the field-specific param instead.
-    let param_name = match search_by.as_str() {
-        "Serialnumber" => "serialnumber",
-        "Macaddress" => "macaddress",
-        "Udid" => "udid",
-        "ImeiNumber" => "imeinumber",
-        "Username" => "user",
-        "Assettag" => "assetnumber",
-        "DeviceFriendlyName" => "devicefriendlyname",
-        _ => "id",
-    };
-
-    let path = format!(
-        "/api/mdm/devices/search?searchby={}&{}={}&page={}&pagesize={}",
-        search_by, param_name, query, page, page_size
-    );
-
-    let resp: DeviceSearchResponse = client.get(&path).await?;
-
-    let devices: Vec<Device> = resp
-        .devices
-        .unwrap_or_default()
-        .into_iter()
-        .map(Device::from)
-        .collect();
-
-    Ok(DeviceSearchResult {
-        devices,
-        page: resp.page.unwrap_or(0),
-        page_size: resp.page_size.unwrap_or(page_size),
-        total: resp.total.unwrap_or(0),
-    })
+    // On Omnissa-rebrand tenants, /api/mdm/devices/search does NOT accept
+    // searchby/id and silently ignores unknown params (returning ALL devices).
+    // Alternate-id lookups (serial / MAC / UDID / IMEI / EAS id / device id)
+    // belong on /api/mdm/devices?searchby=…&id=… which returns a single
+    // Device or 404. Attribute filters (user, model, platform…) stay on
+    // /devices/search.
+    match search_by.as_str() {
+        "Serialnumber" | "Macaddress" | "Udid" | "ImeiNumber" | "EasId" | "DeviceId" => {
+            let path = format!("/api/mdm/devices?searchby={}&id={}", search_by, query);
+            match client.get::<DeviceSummary>(&path).await {
+                Ok(summary) => Ok(DeviceSearchResult {
+                    devices: vec![summary.into()],
+                    page: 0,
+                    page_size: 1,
+                    total: 1,
+                }),
+                Err(_) => Ok(DeviceSearchResult {
+                    devices: vec![],
+                    page: 0,
+                    page_size: 0,
+                    total: 0,
+                }),
+            }
+        }
+        "Username" => {
+            let path = format!(
+                "/api/mdm/devices/search?user={}&page={}&pagesize={}",
+                query, page, page_size
+            );
+            let resp: DeviceSearchResponse = client.get(&path).await?;
+            let devices: Vec<Device> = resp
+                .devices
+                .unwrap_or_default()
+                .into_iter()
+                .map(Device::from)
+                .collect();
+            Ok(DeviceSearchResult {
+                devices,
+                page: resp.page.unwrap_or(0),
+                page_size: resp.page_size.unwrap_or(page_size),
+                total: resp.total.unwrap_or(0),
+            })
+        }
+        // Asset tag and friendly name aren't filterable on this tenant's
+        // /devices/search — return empty rather than a misleading match set.
+        _ => Ok(DeviceSearchResult {
+            devices: vec![],
+            page: 0,
+            page_size: 0,
+            total: 0,
+        }),
+    }
 }
 
 #[tauri::command]
