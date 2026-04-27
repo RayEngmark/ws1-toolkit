@@ -106,6 +106,23 @@
   color: var(--fg-3);
 }
 
+.overrideSelect {
+  height: 18px;
+  padding: 0 4px;
+  background: var(--bg-1);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+  outline: none;
+}
+
+.overrideSelect:focus {
+  border-color: var(--accent);
+}
+
 .clearBtn {
   width: 16px;
   height: 16px;

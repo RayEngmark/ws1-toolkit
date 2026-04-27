@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import * as api from "../../ipc/client";
 import type { Device, OrgGroup, SmartGroup } from "../../ipc/contracts";
-import { detectType, resolveLines } from "../../lib/resolver";
+import {
+  detectType,
+  resolveLines,
+  type SearchOverride,
+} from "../../lib/resolver";
 import {
   ChevronDown,
   ChevronRight,
@@ -19,6 +23,16 @@ export function LookupDevice() {
   const [results, setResults] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [picked, setPicked] = useState<Device | null>(null);
+  const [override, setOverride] = useState<SearchOverride>(
+    () =>
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("search-override") as SearchOverride)) ||
+      "auto"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("search-override", override);
+  }, [override]);
 
   // Browse state
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
@@ -38,7 +52,7 @@ export function LookupDevice() {
     searchTimer.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const result = await resolveLines([query.trim()]);
+        const result = await resolveLines([query.trim()], override);
         const devices: Device[] = [];
         for (const row of result.rows) {
           if (row.status === "resolved" && row.device) devices.push(row.device);
@@ -54,7 +68,7 @@ export function LookupDevice() {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [mode, query]);
+  }, [mode, query, override]);
 
   // Load reference data when entering browse modes
   useEffect(() => {
@@ -130,12 +144,29 @@ export function LookupDevice() {
                   <input
                     type="text"
                     className={styles.searchInput}
-                    placeholder="serial, username, UUID, MAC, IMEI, asset tag…"
+                    placeholder="serial, username, UUID, MAC, IMEI…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     spellCheck={false}
                     autoComplete="off"
                   />
+                  <select
+                    className={styles.overrideSelect}
+                    value={override}
+                    onChange={(e) =>
+                      setOverride(e.target.value as SearchOverride)
+                    }
+                    title="Constrain lookup to one identifier type"
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="serial">Serial</option>
+                    <option value="username">User</option>
+                    <option value="imei">IMEI</option>
+                    <option value="macAddress">MAC</option>
+                    <option value="uuid">UUID</option>
+                    <option value="easid">EAS ID</option>
+                    <option value="deviceid">Device ID</option>
+                  </select>
                   {query && (
                     <button
                       className={styles.clearBtn}
@@ -145,9 +176,10 @@ export function LookupDevice() {
                     </button>
                   )}
                 </div>
-                {query && (
+                {query && override === "auto" && (
                   <span className={styles.detectedHint}>
-                    detected as {labelFor(detectType(query))}
+                    looks like {labelFor(detectType(query))} — searching all
+                    types
                   </span>
                 )}
               </div>
