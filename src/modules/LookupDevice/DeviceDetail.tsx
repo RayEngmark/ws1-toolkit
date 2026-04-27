@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as api from "../../ipc/client";
 import type { Device } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { RemoteView } from "./RemoteView";
 import styles from "./DeviceDetail.module.css";
 
 type Tab = "overview" | "troubleshoot";
@@ -288,6 +289,7 @@ function QuickActions({ device }: { device: Device }) {
           {running === a.label ? "…" : a.label}
         </button>
       ))}
+      <RemoteView device={device} />
     </div>
   );
 }
