@@ -30,6 +30,7 @@ pub fn run() {
             // Organization Groups
             org_group::search_org_groups,
             org_group::get_og_children,
+            org_group::get_devices_in_og,
             org_group::move_device_to_og,
             org_group::bulk_move_devices,
             // Profiles

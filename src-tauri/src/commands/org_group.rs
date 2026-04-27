@@ -1,7 +1,9 @@
 use tauri::State;
 
 use crate::api::client::WS1Client;
-use crate::api::types::{BulkActionResult, OGSearchResponse, OrgGroup};
+use crate::api::types::{
+    BulkActionResult, Device, DeviceSearchResponse, OGSearchResponse, OrgGroup,
+};
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -57,6 +59,30 @@ pub async fn get_og_children(
     };
 
     Ok(children)
+}
+
+/// Wraps `GET /api/mdm/devices/search?lgid={ogId}&pagesize=500`.
+/// `lgid` is the documented filter for "limit search to this OG"
+/// (per /api/help/Docs/mdmv1 → /devices/search). Whether children are
+/// included is controlled by the tenant's `Include child OGs` config —
+/// we don't override it here.
+#[tauri::command]
+pub async fn get_devices_in_og(
+    state: State<'_, AppState>,
+    og_id: i64,
+) -> Result<Vec<Device>, AppError> {
+    let client = WS1Client::from_state(&state).await?;
+    let path = format!(
+        "/api/mdm/devices/search?lgid={}&pagesize=500",
+        og_id
+    );
+    let resp: DeviceSearchResponse = client.get(&path).await?;
+    Ok(resp
+        .devices
+        .unwrap_or_default()
+        .into_iter()
+        .map(Device::from)
+        .collect())
 }
 
 #[tauri::command]

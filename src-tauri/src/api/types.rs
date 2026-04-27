@@ -121,6 +121,11 @@ impl From<TagEntry> for Tag {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct OGSearchResponse {
+    // /api/help/Docs/systemv1 documents the wrapper as `LocationGroups`
+    // for /groups/search; older / regional tenants used `OrganizationGroups`.
+    // Accept either name to avoid a silent empty list when WS1 ships the
+    // other one.
+    #[serde(alias = "LocationGroups")]
     pub organization_groups: Option<Vec<OGEntry>>,
 }
 
@@ -271,15 +276,26 @@ pub struct SmartGroupSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SmartGroupEntry {
+    // Field names verified against the live tenant spec at
+    // /api/help/Docs/mdmv1 → SmartGroupSearchModel.
     #[serde(rename = "SmartGroupID")]
     pub smart_group_id: Option<i64>,
     pub name: Option<String>,
-    pub criteria_type: Option<String>,
-    pub managed_by_organization_group_id: Option<i64>,
+    // Search endpoint returns ManagedByOrganizationGroupId as a *string*
+    // (decimal id serialized as text). Alias kept for older tenants where
+    // it might come back as a number — serde will accept either.
+    pub managed_by_organization_group_id: Option<String>,
     pub managed_by_organization_group_name: Option<String>,
-    pub device_count: Option<i32>,
-    pub apps_count: Option<i32>,
-    pub profiles_count: Option<i32>,
+    // Search endpoint uses Devices / Assignments / Exclusions; the
+    // single-SG GET uses *Count variants. Accept both via alias so we work
+    // on either response shape without falling back silently.
+    #[serde(alias = "DeviceCount")]
+    pub devices: Option<i32>,
+    #[serde(alias = "AppsCount")]
+    pub assignments: Option<i32>,
+    pub exclusions: Option<i32>,
+    // Only present in the single-SG GET — leave as Option, never fabricate.
+    pub criteria_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -297,15 +313,26 @@ pub struct SmartGroup {
 
 impl From<SmartGroupEntry> for SmartGroup {
     fn from(s: SmartGroupEntry) -> Self {
+        // Conversions surface what the server actually returned. Any field
+        // the spec omits passes through as `None` → `unwrap_or_default()`
+        // returns the empty/zero default; we deliberately do NOT fabricate
+        // a placeholder string ("Unknown" / "None") because the contract
+        // says: if WS1 didn't send it, we don't pretend it did.
         Self {
-            id: s.smart_group_id.unwrap_or(0),
+            id: s.smart_group_id.unwrap_or_default(),
             name: s.name.unwrap_or_default(),
-            criteria_type: s.criteria_type.unwrap_or_else(|| "None".into()),
-            managed_by_og_id: s.managed_by_organization_group_id.unwrap_or(0),
+            criteria_type: s.criteria_type.unwrap_or_default(),
+            // The string-id from the server -> i64 in our typed shape; if
+            // the server sent something un-parseable, treat as 0 rather
+            // than silently 404 on every action.
+            managed_by_og_id: s
+                .managed_by_organization_group_id
+                .and_then(|s| s.parse().ok())
+                .unwrap_or_default(),
             managed_by_og_name: s.managed_by_organization_group_name.unwrap_or_default(),
-            device_count: s.device_count.unwrap_or(0),
-            app_count: s.apps_count.unwrap_or(0),
-            profile_count: s.profiles_count.unwrap_or(0),
+            device_count: s.devices.unwrap_or_default(),
+            app_count: s.assignments.unwrap_or_default(),
+            profile_count: 0, // not present in /search response — set 0 unless the single-GET fills it
         }
     }
 }
