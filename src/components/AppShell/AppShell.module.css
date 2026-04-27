@@ -28,3 +28,11 @@
   background: var(--border);
   flex-shrink: 0;
 }
+
+.actionFooterSlot {
+  flex-shrink: 0;
+}
+
+.actionFooterSlot:empty {
+  display: none;
+}

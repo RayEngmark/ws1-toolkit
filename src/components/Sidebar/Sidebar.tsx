@@ -48,11 +48,6 @@ export function Sidebar() {
   const activeModule = useUIStore((s) => s.activeModule);
   const navigate = useUIStore((s) => s.navigate);
   const isConnected = useConnectionStore((s) => s.isConnected);
-  const tenantUrl = useConnectionStore((s) => s.tenantUrl);
-
-  const tenantHost = tenantUrl
-    ? tenantUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
-    : "—";
 
   const renderItem = (item: NavItem) => {
     const disabled = item.requiresConnection && !isConnected;
@@ -105,23 +100,6 @@ export function Sidebar() {
         <div className={styles.section}>
           <div className={styles.sectionHeader}>Settings</div>
           <div className={styles.navList}>{SETTINGS.map(renderItem)}</div>
-        </div>
-      </div>
-
-      <div className={styles.tenantInfo}>
-        <div className={styles.infoRow}>
-          <span className={styles.infoLabel}>Host</span>
-          <span className={styles.infoValue} title={tenantHost}>
-            {tenantHost}
-          </span>
-        </div>
-        <div className={styles.infoRow}>
-          <span className={styles.infoLabel}>Status</span>
-          <span
-            className={`${styles.infoValue} ${isConnected ? styles.statusOk : styles.statusOff}`}
-          >
-            {isConnected ? "Online" : "Offline"}
-          </span>
         </div>
       </div>
     </aside>

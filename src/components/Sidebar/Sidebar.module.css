@@ -37,10 +37,6 @@
   margin: 4px 0;
 }
 
-.spacer {
-  flex: 1;
-}
-
 .navList {
   display: flex;
   flex-direction: column;
@@ -96,47 +92,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Tenant info pinned to bottom */
-.tenantInfo {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-2);
-  flex-shrink: 0;
-}
-
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 18px;
-  font-size: 11px;
-}
-
-.infoLabel {
-  color: var(--fg-2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 10px;
-}
-
-.infoValue {
-  color: var(--fg-0);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.statusOk {
-  color: var(--success);
-}
-
-.statusOff {
-  color: var(--fg-2);
 }

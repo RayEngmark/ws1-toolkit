@@ -4,6 +4,7 @@ import * as api from "../../ipc/client";
 import type { App, AppPushMode, BulkActionResult, SmartGroup } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
 import { useEntryContext } from "../../dynamic/entryContext";
+import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./AssignApp.module.css";
 
@@ -198,7 +199,7 @@ export function AssignApp() {
         </div>
       </div>
 
-      <footer className={shared.footer}>
+      <FooterSlot className={shared.footer}>
         <span className={shared.footerInfo}>
           {ready ? (
             <>
@@ -221,7 +222,7 @@ export function AssignApp() {
         >
           {busy ? "Assigning…" : `Assign app`}
         </button>
-      </footer>
+      </FooterSlot>
     </div>
   );
 }

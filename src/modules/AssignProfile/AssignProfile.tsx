@@ -11,6 +11,7 @@ import type {
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
 import { useEntryContext } from "../../dynamic/entryContext";
+import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./AssignProfile.module.css";
 
@@ -232,7 +233,7 @@ export function AssignProfile() {
         </div>
       </div>
 
-      <footer className={shared.footer}>
+      <FooterSlot className={shared.footer}>
         <span className={shared.footerInfo}>
           {ready ? (
             target === "devices" ? (
@@ -278,7 +279,7 @@ export function AssignProfile() {
               ? `Install on ${selection.length || 0} device(s)`
               : "Assign to smart group"}
         </button>
-      </footer>
+      </FooterSlot>
     </div>
   );
 }

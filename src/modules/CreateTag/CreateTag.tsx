@@ -3,6 +3,7 @@ import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
 import type { OrgGroup } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./CreateTag.module.css";
 
@@ -113,7 +114,7 @@ export function CreateTag() {
         </div>
       </div>
 
-      <footer className={shared.footer}>
+      <FooterSlot className={shared.footer}>
         <span className={shared.footerInfo}>
           {ready ? (
             <span style={{ color: "var(--fg-0)" }}>
@@ -133,7 +134,7 @@ export function CreateTag() {
         >
           {busy ? "Creating…" : "Create tag"}
         </button>
-      </footer>
+      </FooterSlot>
     </div>
   );
 }

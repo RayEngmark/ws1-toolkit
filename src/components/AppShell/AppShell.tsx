@@ -6,6 +6,7 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import { Toolbar } from "../Toolbar/Toolbar";
 import { StatusBar } from "../StatusBar/StatusBar";
 import { ToastContainer } from "../Toast/Toast";
+import { FooterSlotProvider } from "./FooterSlot";
 import { Settings } from "../../modules/Settings/Settings";
 import { TagDevices } from "../../modules/TagDevices/TagDevices";
 import { MoveDevices } from "../../modules/MoveDevices/MoveDevices";
@@ -66,37 +67,37 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <Toolbar />
-      <div className={styles.body}>
-        {mode === "classic" && (
-          <>
-            <Sidebar />
-            <div className={styles.divider} />
+      <FooterSlotProvider className={styles.actionFooterSlot}>
+        <Toolbar />
+        <div className={styles.body}>
+          {mode === "classic" && (
+            <>
+              <Sidebar />
+              <div className={styles.divider} />
+              <div className={styles.main}>
+                <div className={styles.content}>
+                  <ActiveComponent />
+                </div>
+              </div>
+            </>
+          )}
+          {mode === "library" && (
             <div className={styles.main}>
               <div className={styles.content}>
-                <ActiveComponent />
+                <LibraryShell />
               </div>
-              <StatusBar />
             </div>
-          </>
-        )}
-        {mode === "library" && (
-          <div className={styles.main}>
-            <div className={styles.content}>
-              <LibraryShell />
+          )}
+          {mode === "dynamic" && (
+            <div className={styles.main}>
+              <div className={styles.content}>
+                <DynamicShell />
+              </div>
             </div>
-            <StatusBar />
-          </div>
-        )}
-        {mode === "dynamic" && (
-          <div className={styles.main}>
-            <div className={styles.content}>
-              <DynamicShell />
-            </div>
-            <StatusBar />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </FooterSlotProvider>
+      <StatusBar />
       <ToastContainer />
     </div>
   );

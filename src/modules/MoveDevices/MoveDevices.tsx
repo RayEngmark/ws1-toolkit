@@ -6,6 +6,7 @@ import type { BulkActionResult, OrgGroup } from "../../ipc/contracts";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
 import { useEntryContext } from "../../dynamic/entryContext";
+import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
 
 interface FlatOG {
@@ -155,7 +156,7 @@ export function MoveDevices() {
         </div>
       </div>
 
-      <footer className={shared.footer}>
+      <FooterSlot className={shared.footer}>
         <span className={shared.footerInfo}>
           {ready ? (
             <>
@@ -181,7 +182,7 @@ export function MoveDevices() {
         >
           {busy ? "Moving…" : `Move ${willMove} device(s)`}
         </button>
-      </footer>
+      </FooterSlot>
     </div>
   );
 }

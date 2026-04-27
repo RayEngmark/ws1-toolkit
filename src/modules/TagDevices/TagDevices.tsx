@@ -6,6 +6,7 @@ import type { BulkActionResult, Tag } from "../../ipc/contracts";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
 import { useEntryContext } from "../../dynamic/entryContext";
+import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
 
 export function TagDevices() {
@@ -121,7 +122,7 @@ export function TagDevices() {
         </div>
       </div>
 
-      <footer className={shared.footer}>
+      <FooterSlot className={shared.footer}>
         <span className={shared.footerInfo}>
           {ready ? (
             <>
@@ -152,7 +153,7 @@ export function TagDevices() {
         >
           Remove tag
         </button>
-      </footer>
+      </FooterSlot>
     </div>
   );
 }
