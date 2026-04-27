@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { App } from "../../ipc/contracts";
+import { useUIStore } from "../../state/uiStore";
 import { NounPage } from "../../components/NounPage/NounPage";
+import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./Apps.module.css";
 
 export function Apps() {
   const [items, setItems] = useState<App[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useUIStore((s) => s.openDrawer);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +68,12 @@ export function Apps() {
             { label: "OG", value: a.ogName },
           ]}
           raw={a}
+        />
+      )}
+      renderFooter={(a) => (
+        <FooterButton
+          label="Assign to smart group"
+          onClick={() => openDrawer("assign-app", { appId: a.id })}
         />
       )}
     />

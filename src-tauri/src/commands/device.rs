@@ -58,8 +58,37 @@ pub async fn search_devices(
                 total: resp.total.unwrap_or(0),
             })
         }
-        // Asset tag and friendly name aren't filterable on this tenant's
-        // /devices/search — return empty rather than a misleading match set.
+        // Friendly name and asset tag aren't filter params on /devices/search.
+        // Fall back to fetching the first 500 devices and filtering client-side
+        // by the matching field. Slower than a server-side filter but the only
+        // way to make name lookups work on this tenant's API surface — better
+        // than silently returning nothing.
+        "DeviceFriendlyName" | "Assettag" => {
+            let path = "/api/mdm/devices/search?pagesize=500";
+            let resp: DeviceSearchResponse = client.get(path).await?;
+            let needle = query.to_lowercase();
+            let devices: Vec<Device> = resp
+                .devices
+                .unwrap_or_default()
+                .into_iter()
+                .map(Device::from)
+                .filter(|d| {
+                    let hay = if search_by == "DeviceFriendlyName" {
+                        d.friendly_name.to_lowercase()
+                    } else {
+                        d.asset_number.to_lowercase()
+                    };
+                    !needle.is_empty() && hay.contains(&needle)
+                })
+                .collect();
+            let total = devices.len() as i32;
+            Ok(DeviceSearchResult {
+                devices,
+                page: 0,
+                page_size: total,
+                total,
+            })
+        }
         _ => Ok(DeviceSearchResult {
             devices: vec![],
             page: 0,

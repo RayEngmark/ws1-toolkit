@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { SmartGroup } from "../../ipc/contracts";
+import { useUIStore } from "../../state/uiStore";
 import { NounPage } from "../../components/NounPage/NounPage";
+import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./SmartGroups.module.css";
 
 export function SmartGroups() {
   const [items, setItems] = useState<SmartGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useUIStore((s) => s.openDrawer);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +66,24 @@ export function SmartGroups() {
           ]}
           raw={sg}
         />
+      )}
+      renderFooter={(sg) => (
+        <>
+          <FooterButton
+            label="Add devices"
+            onClick={() => openDrawer("add-to-sg", { smartGroupId: sg.id })}
+          />
+          <FooterButton
+            label="Remove devices"
+            onClick={() =>
+              openDrawer("remove-from-sg", { smartGroupId: sg.id })
+            }
+          />
+          <FooterButton
+            label="Assign app"
+            onClick={() => openDrawer("assign-app", { smartGroupId: sg.id })}
+          />
+        </>
       )}
     />
   );

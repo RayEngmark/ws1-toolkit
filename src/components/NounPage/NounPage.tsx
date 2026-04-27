@@ -16,6 +16,8 @@ export interface NounPageProps<T> {
   itemMatch: (item: T, query: string) => boolean;
   renderRow: (item: T, isSelected: boolean) => React.ReactNode;
   renderDetail: (item: T) => React.ReactNode;
+  /** Action footer rendered under the detail panel when an item is picked. */
+  renderFooter?: (item: T) => React.ReactNode;
   filterPlaceholder?: string;
   /** Optional extra control row above the filter (e.g. an OG selector). */
   controlsSlot?: React.ReactNode;
@@ -30,6 +32,7 @@ export function NounPage<T>({
   itemMatch,
   renderRow,
   renderDetail,
+  renderFooter,
   filterPlaceholder,
   controlsSlot,
 }: NounPageProps<T>) {
@@ -108,7 +111,12 @@ export function NounPage<T>({
 
         <div className={styles.rightCol}>
           {picked ? (
-            renderDetail(picked)
+            <>
+              <div className={styles.rightContent}>{renderDetail(picked)}</div>
+              {renderFooter && (
+                <div className={styles.rightFooter}>{renderFooter(picked)}</div>
+              )}
+            </>
           ) : (
             <div className={styles.detailEmpty}>
               <span className={styles.detailEmptyText}>

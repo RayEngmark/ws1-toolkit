@@ -10,6 +10,11 @@ export function detectType(line: string): IdentifierType {
   const v = line.trim();
   if (!v) return "unknown";
 
+  // Apple UDID: 40 hex chars, no separators. WS1 expects this exact form
+  // for the searchby=Udid lookup.
+  if (/^[0-9a-f]{40}$/i.test(v)) return "uuid";
+  // Standard UUID: 8-4-4-4-12 hex. Some tenants accept this directly via
+  // searchby=Udid, others don't — fan-out tries it either way.
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) {
     return "uuid";
   }

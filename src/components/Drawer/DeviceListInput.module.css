@@ -1,0 +1,58 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.area {
+  width: 100%;
+  padding: 8px;
+  background: var(--bg-0);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+
+.area:focus {
+  border-color: var(--accent);
+}
+
+.summary {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.ok {
+  color: var(--success, #4caf50);
+}
+
+.bad {
+  color: var(--danger, #f44336);
+}
+
+.muted {
+  color: var(--fg-3);
+  font-style: italic;
+}
+
+.misses {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}
+
+.misses summary {
+  cursor: pointer;
+  color: var(--danger, #f44336);
+}
+
+.misses ul {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+}

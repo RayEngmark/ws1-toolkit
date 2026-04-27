@@ -15,7 +15,12 @@ pub struct DeviceSearchResponse {
 #[serde(rename_all = "PascalCase")]
 pub struct DeviceSummary {
     pub id: Option<IdValue>,
+    pub uuid: Option<String>,
+    pub udid: Option<String>,
     pub serial_number: Option<String>,
+    pub mac_address: Option<String>,
+    pub imei: Option<String>,
+    pub asset_number: Option<String>,
     pub device_friendly_name: Option<String>,
     pub user_name: Option<String>,
     pub model: Option<String>,
@@ -25,6 +30,8 @@ pub struct DeviceSummary {
     pub platform: Option<String>,
     pub ownership: Option<String>,
     pub enrollment_status: Option<String>,
+    #[serde(rename = "LocationGroupId")]
+    pub location_group_id: Option<IdValue>,
     #[serde(rename = "LocationGroupName")]
     pub location_group_name: Option<String>,
 }
@@ -35,12 +42,21 @@ pub struct IdValue {
     pub value: Option<i64>,
 }
 
-// Flattened device for frontend consumption
+// Flattened device for frontend consumption. Field set must mirror the TS
+// Device contract in src/ipc/contracts.ts — anything missing here surfaces
+// as undefined on the JS side and breaks the typed UI. Per the data-integrity
+// rule: never substitute placeholder strings for missing fields; pass empty
+// through and let the renderer show "—".
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub id: i64,
+    pub uuid: String,
+    pub udid: String,
     pub serial_number: String,
+    pub mac_address: String,
+    pub imei: String,
+    pub asset_number: String,
     pub friendly_name: String,
     pub user_name: String,
     pub model: String,
@@ -50,23 +66,33 @@ pub struct Device {
     pub last_seen: String,
     pub ownership: String,
     pub enrollment_status: String,
+    pub og_id: i64,
     pub og_name: String,
 }
 
 impl From<DeviceSummary> for Device {
     fn from(d: DeviceSummary) -> Self {
         Self {
-            id: d.id.and_then(|id| id.value).unwrap_or(0),
+            id: d.id.and_then(|id| id.value).unwrap_or_default(),
+            uuid: d.uuid.unwrap_or_default(),
+            udid: d.udid.unwrap_or_default(),
             serial_number: d.serial_number.unwrap_or_default(),
+            mac_address: d.mac_address.unwrap_or_default(),
+            imei: d.imei.unwrap_or_default(),
+            asset_number: d.asset_number.unwrap_or_default(),
             friendly_name: d.device_friendly_name.unwrap_or_default(),
             user_name: d.user_name.unwrap_or_default(),
             model: d.model.unwrap_or_default(),
             os: d.operating_system.unwrap_or_default(),
             platform: d.platform.unwrap_or_default(),
-            compliance_status: d.compliance_status.unwrap_or("Unknown".into()),
+            compliance_status: d.compliance_status.unwrap_or_default(),
             last_seen: d.last_seen.unwrap_or_default(),
             ownership: d.ownership.unwrap_or_default(),
             enrollment_status: d.enrollment_status.unwrap_or_default(),
+            og_id: d
+                .location_group_id
+                .and_then(|id| id.value)
+                .unwrap_or_default(),
             og_name: d.location_group_name.unwrap_or_default(),
         }
     }

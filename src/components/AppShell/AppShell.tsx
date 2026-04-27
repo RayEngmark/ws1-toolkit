@@ -6,6 +6,7 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import { StatusBar } from "../StatusBar/StatusBar";
 import { ToastContainer } from "../Toast/Toast";
 import { FooterSlotProvider } from "./FooterSlot";
+import { DrawerHost } from "../Drawer/DrawerHost";
 import { Settings } from "../../modules/Settings/Settings";
 import { LookupDevice } from "../../modules/LookupDevice/LookupDevice";
 import { SmartGroups } from "../../modules/SmartGroups/SmartGroups";
@@ -64,6 +65,7 @@ export function AppShell() {
       </FooterSlotProvider>
       <StatusBar />
       <ToastContainer />
+      <DrawerHost />
     </div>
   );
 }

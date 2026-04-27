@@ -1,0 +1,49 @@
+.default,
+.primary,
+.danger {
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.default {
+  background: var(--bg-0);
+  color: var(--fg-0);
+}
+
+.default:hover:not(:disabled) {
+  background: var(--bg-1);
+  border-color: var(--accent);
+}
+
+.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.danger {
+  background: var(--bg-0);
+  color: var(--danger, #f44336);
+  border-color: var(--danger, #f44336);
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(218, 54, 51, 0.1);
+}
+
+.default:disabled,
+.primary:disabled,
+.danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

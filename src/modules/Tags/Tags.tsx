@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { OrgGroup, Tag } from "../../ipc/contracts";
+import { useUIStore } from "../../state/uiStore";
 import { NounPage } from "../../components/NounPage/NounPage";
+import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./Tags.module.css";
 
@@ -15,6 +17,7 @@ export function Tags() {
   const [ogId, setOgId] = useState<number | null>(null);
   const [items, setItems] = useState<Tag[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useUIStore((s) => s.openDrawer);
 
   // Load OG list on mount, default to the first root.
   useEffect(() => {
@@ -79,6 +82,20 @@ export function Tags() {
           ]}
           raw={t}
         />
+      )}
+      renderFooter={(t) => (
+        <>
+          <FooterButton
+            label="Apply to devices"
+            onClick={() => openDrawer("apply-tag", { tagId: t.id, mode: "add" })}
+          />
+          <FooterButton
+            label="Remove from devices"
+            onClick={() =>
+              openDrawer("apply-tag", { tagId: t.id, mode: "remove" })
+            }
+          />
+        </>
       )}
       controlsSlot={
         <div className={styles.ogSelectRow}>

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import * as api from "../../ipc/client";
 import type { OrgGroup } from "../../ipc/contracts";
+import { useUIStore } from "../../state/uiStore";
 import { NounPage } from "../../components/NounPage/NounPage";
+import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./OrgGroups.module.css";
 
@@ -23,6 +25,7 @@ function flattenTree(roots: OrgGroup[]): OrgGroup[] {
 export function OrgGroups() {
   const [tree, setTree] = useState<OrgGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useUIStore((s) => s.openDrawer);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +87,12 @@ export function OrgGroups() {
             { label: "Children", value: og.children.length, mono: true },
           ]}
           raw={og}
+        />
+      )}
+      renderFooter={(og) => (
+        <FooterButton
+          label="Move devices into this OG"
+          onClick={() => openDrawer("move-og", { targetOgId: og.id })}
         />
       )}
     />

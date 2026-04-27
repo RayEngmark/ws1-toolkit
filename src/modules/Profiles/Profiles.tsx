@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { Profile } from "../../ipc/contracts";
+import { useUIStore } from "../../state/uiStore";
 import { NounPage } from "../../components/NounPage/NounPage";
+import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./Profiles.module.css";
 
 export function Profiles() {
   const [items, setItems] = useState<Profile[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useUIStore((s) => s.openDrawer);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +67,12 @@ export function Profiles() {
             { label: "OG", value: p.ogName },
           ]}
           raw={p}
+        />
+      )}
+      renderFooter={(p) => (
+        <FooterButton
+          label="Install on devices"
+          onClick={() => openDrawer("assign-profile", { profileId: p.id })}
         />
       )}
     />
