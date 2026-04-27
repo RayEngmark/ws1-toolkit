@@ -1,4 +1,4 @@
-import { type Module, useUIStore } from "../../state/uiStore";
+import { type Route, useUIStore } from "../../state/uiStore";
 import { useConnectionStore } from "../../state/connectionStore";
 import {
   SettingsIcon,
@@ -7,51 +7,38 @@ import {
   DeviceIcon,
   SearchIcon,
   PlayIcon,
-  CheckIcon,
-  XIcon,
 } from "../../lib/icons";
 import styles from "./Sidebar.module.css";
 
 interface NavItem {
-  id: Module;
+  id: Route;
   label: string;
   icon: React.ReactNode;
   requiresConnection?: boolean;
 }
 
-const QUICK_ACTIONS: NavItem[] = [
-  { id: "tag-devices", label: "Tag devices", icon: <TagIcon />, requiresConnection: true },
-  { id: "move-devices", label: "Move devices to OG", icon: <FolderTreeIcon />, requiresConnection: true },
-  { id: "add-to-sg", label: "Add devices to smart group", icon: <CheckIcon />, requiresConnection: true },
-  { id: "remove-from-sg", label: "Remove devices from smart group", icon: <XIcon />, requiresConnection: true },
+const NOUNS: NavItem[] = [
+  { id: "devices", label: "Devices", icon: <SearchIcon />, requiresConnection: true },
+  { id: "smartgroups", label: "Smart Groups", icon: <DeviceIcon />, requiresConnection: true },
+  { id: "ogs", label: "Org Groups", icon: <FolderTreeIcon />, requiresConnection: true },
+  { id: "tags", label: "Tags", icon: <TagIcon />, requiresConnection: true },
+  { id: "profiles", label: "Profiles", icon: <PlayIcon />, requiresConnection: true },
+  { id: "apps", label: "Apps", icon: <DeviceIcon />, requiresConnection: true },
 ];
 
-const ASSIGNMENTS: NavItem[] = [
-  { id: "assign-profile", label: "Assign profile", icon: <PlayIcon />, requiresConnection: true },
-  { id: "assign-app", label: "Assign app to smart group", icon: <DeviceIcon />, requiresConnection: true },
-];
-
-const LOOKUPS: NavItem[] = [
-  { id: "lookup-device", label: "Look up devices", icon: <SearchIcon />, requiresConnection: true },
-  { id: "lookup-sg", label: "Look up smart group", icon: <SearchIcon />, requiresConnection: true },
-];
-
-const ADMIN: NavItem[] = [
-  { id: "create-tag", label: "Create new tag", icon: <TagIcon />, requiresConnection: true },
-];
-
-const SETTINGS: NavItem[] = [
-  { id: "settings", label: "Connection", icon: <SettingsIcon /> },
+const UTILITIES: NavItem[] = [
+  { id: "api-explorer", label: "API Explorer", icon: <SearchIcon />, requiresConnection: true },
+  { id: "settings", label: "Settings", icon: <SettingsIcon /> },
 ];
 
 export function Sidebar() {
-  const activeModule = useUIStore((s) => s.activeModule);
+  const activeRoute = useUIStore((s) => s.activeRoute);
   const navigate = useUIStore((s) => s.navigate);
   const isConnected = useConnectionStore((s) => s.isConnected);
 
   const renderItem = (item: NavItem) => {
     const disabled = item.requiresConnection && !isConnected;
-    const isActive = activeModule === item.id;
+    const isActive = activeRoute === item.id;
     return (
       <button
         key={item.id}
@@ -70,36 +57,13 @@ export function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.scroll}>
         <div className={styles.section}>
-          <div className={styles.sectionHeader}>Quick Actions</div>
-          <div className={styles.navList}>{QUICK_ACTIONS.map(renderItem)}</div>
+          <div className={styles.navList}>{NOUNS.map(renderItem)}</div>
         </div>
 
         <div className={styles.divider} />
 
         <div className={styles.section}>
-          <div className={styles.sectionHeader}>Assignments</div>
-          <div className={styles.navList}>{ASSIGNMENTS.map(renderItem)}</div>
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>Lookups</div>
-          <div className={styles.navList}>{LOOKUPS.map(renderItem)}</div>
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>Admin</div>
-          <div className={styles.navList}>{ADMIN.map(renderItem)}</div>
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>Settings</div>
-          <div className={styles.navList}>{SETTINGS.map(renderItem)}</div>
+          <div className={styles.navList}>{UTILITIES.map(renderItem)}</div>
         </div>
       </div>
     </aside>

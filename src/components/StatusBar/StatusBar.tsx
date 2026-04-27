@@ -1,26 +1,24 @@
 import { useConnectionStore } from "../../state/connectionStore";
 import { useSelectionStore } from "../../state/selectionStore";
-import { useUIStore } from "../../state/uiStore";
+import { useUIStore, type Route } from "../../state/uiStore";
 import { CircleFilled } from "../../lib/icons";
 import styles from "./StatusBar.module.css";
 
-const MODULE_LABELS: Record<string, string> = {
-  settings: "Connection",
-  "tag-devices": "Tag devices",
-  "move-devices": "Move devices to OG",
-  "assign-profile": "Assign profile",
-  "assign-app": "Assign app",
-  "add-to-sg": "Add devices to smart group",
-  "remove-from-sg": "Remove devices from smart group",
-  "lookup-sg": "Look up smart group",
-  "lookup-device": "Look up devices",
-  "create-tag": "Create tag",
+const ROUTE_LABELS: Record<Route, string> = {
+  devices: "Devices",
+  smartgroups: "Smart Groups",
+  ogs: "Org Groups",
+  tags: "Tags",
+  profiles: "Profiles",
+  apps: "Apps",
+  "api-explorer": "API Explorer",
+  settings: "Settings",
 };
 
 export function StatusBar() {
   const isConnected = useConnectionStore((s) => s.isConnected);
   const tenantUrl = useConnectionStore((s) => s.tenantUrl);
-  const activeModule = useUIStore((s) => s.activeModule);
+  const activeRoute = useUIStore((s) => s.activeRoute);
   const selectionCount = useSelectionStore((s) => s.devices.length);
   const clearSelection = useSelectionStore((s) => s.clear);
 
@@ -37,7 +35,7 @@ export function StatusBar() {
         <span>{isConnected ? "Connected" : "Disconnected"}</span>
       </span>
       <span className={styles.segment}>{tenantHost}</span>
-      <span className={styles.segment}>{MODULE_LABELS[activeModule]}</span>
+      <span className={styles.segment}>{ROUTE_LABELS[activeRoute]}</span>
       <span className={styles.spacer} />
       {selectionCount > 0 && (
         <button

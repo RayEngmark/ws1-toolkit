@@ -2,8 +2,9 @@
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 0;
-  height: 540px;
-  border: 1px solid var(--border);
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--border);
   background: var(--bg-1);
 }
 

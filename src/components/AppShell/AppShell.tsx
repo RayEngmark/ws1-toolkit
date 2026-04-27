@@ -1,44 +1,30 @@
 import { useEffect, useRef } from "react";
-import { useUIStore } from "../../state/uiStore";
+import { useUIStore, type Route } from "../../state/uiStore";
 import { useConnectionStore } from "../../state/connectionStore";
 import { useSelectionStore } from "../../state/selectionStore";
 import { Sidebar } from "../Sidebar/Sidebar";
-import { Toolbar } from "../Toolbar/Toolbar";
 import { StatusBar } from "../StatusBar/StatusBar";
 import { ToastContainer } from "../Toast/Toast";
 import { FooterSlotProvider } from "./FooterSlot";
+import { ComingSoon } from "../ComingSoon/ComingSoon";
 import { Settings } from "../../modules/Settings/Settings";
-import { TagDevices } from "../../modules/TagDevices/TagDevices";
-import { MoveDevices } from "../../modules/MoveDevices/MoveDevices";
-import { AssignProfile } from "../../modules/AssignProfile/AssignProfile";
-import { AssignApp } from "../../modules/AssignApp/AssignApp";
-import { AddToSmartGroup } from "../../modules/AddToSmartGroup/AddToSmartGroup";
-import { RemoveFromSmartGroup } from "../../modules/RemoveFromSmartGroup/RemoveFromSmartGroup";
-import { LookupSmartGroup } from "../../modules/LookupSmartGroup/LookupSmartGroup";
 import { LookupDevice } from "../../modules/LookupDevice/LookupDevice";
-import { CreateTag } from "../../modules/CreateTag/CreateTag";
-import { DynamicShell } from "../../dynamic/DynamicShell";
 import { LibraryShell } from "../../library/LibraryShell";
 import styles from "./AppShell.module.css";
 
-const MODULE_MAP = {
-  settings: Settings,
-  "tag-devices": TagDevices,
-  "move-devices": MoveDevices,
-  "assign-profile": AssignProfile,
-  "assign-app": AssignApp,
-  "add-to-sg": AddToSmartGroup,
-  "remove-from-sg": RemoveFromSmartGroup,
-  "lookup-sg": LookupSmartGroup,
-  "lookup-device": LookupDevice,
-  "create-tag": CreateTag,
-} as const;
+const ROUTE_VIEW: Record<Route, () => React.ReactElement> = {
+  devices: () => <LookupDevice />,
+  smartgroups: () => <ComingSoon noun="Smart Groups" />,
+  ogs: () => <ComingSoon noun="Org Groups" />,
+  tags: () => <ComingSoon noun="Tags" />,
+  profiles: () => <ComingSoon noun="Profiles" />,
+  apps: () => <ComingSoon noun="Apps" />,
+  "api-explorer": () => <LibraryShell />,
+  settings: () => <Settings />,
+};
 
 export function AppShell() {
-  const mode = useUIStore((s) => s.mode);
-  const activeModule = useUIStore((s) => s.activeModule);
-  const dynamicNav = useUIStore((s) => s.dynamicNav);
-  const ActiveComponent = MODULE_MAP[activeModule];
+  const activeRoute = useUIStore((s) => s.activeRoute);
   const loadCredentials = useConnectionStore((s) => s.loadCredentials);
   const clearSelection = useSelectionStore((s) => s.clear);
 
@@ -46,8 +32,7 @@ export function AppShell() {
     loadCredentials();
   }, [loadCredentials]);
 
-  // Reset device selection any time the user leaves a view (mode switch, sidebar
-  // nav in Classic, breadcrumb / tile / action click in Dynamic). Selection is
+  // Reset device selection any time the user changes routes — selection is
   // scoped to the current view session.
   const isFirstNav = useRef(true);
   useEffect(() => {
@@ -56,45 +41,21 @@ export function AppShell() {
       return;
     }
     clearSelection();
-  }, [
-    mode,
-    activeModule,
-    dynamicNav.level,
-    dynamicNav.objectKey,
-    dynamicNav.actionKey,
-    clearSelection,
-  ]);
+  }, [activeRoute, clearSelection]);
+
+  const View = ROUTE_VIEW[activeRoute];
 
   return (
     <div className="app-shell">
       <FooterSlotProvider className={styles.actionFooterSlot}>
-        <Toolbar />
         <div className={styles.body}>
-          {mode === "classic" && (
-            <>
-              <Sidebar />
-              <div className={styles.divider} />
-              <div className={styles.main}>
-                <div className={styles.content}>
-                  <ActiveComponent />
-                </div>
-              </div>
-            </>
-          )}
-          {mode === "library" && (
-            <div className={styles.main}>
-              <div className={styles.content}>
-                <LibraryShell />
-              </div>
+          <Sidebar />
+          <div className={styles.divider} />
+          <div className={styles.main}>
+            <div className={styles.content}>
+              <View />
             </div>
-          )}
-          {mode === "dynamic" && (
-            <div className={styles.main}>
-              <div className={styles.content}>
-                <DynamicShell />
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </FooterSlotProvider>
       <StatusBar />

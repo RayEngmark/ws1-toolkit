@@ -1,26 +1,18 @@
 import { create } from "zustand";
 
-export type Module =
-  | "settings"
-  | "tag-devices"
-  | "move-devices"
-  | "assign-profile"
-  | "assign-app"
-  | "add-to-sg"
-  | "remove-from-sg"
-  | "lookup-sg"
-  | "lookup-device"
-  | "create-tag";
-
-export type Mode = "classic" | "library" | "dynamic";
-
-export type DynamicLevel = "home" | "object" | "action";
-
-export interface DynamicNav {
-  level: DynamicLevel;
-  objectKey?: string;
-  actionKey?: string;
-}
+/**
+ * Sidebar routes — every screen in the app is one of these.
+ * Object-first: the six nouns the user manages, then two utilities.
+ */
+export type Route =
+  | "devices"
+  | "smartgroups"
+  | "ogs"
+  | "tags"
+  | "profiles"
+  | "apps"
+  | "api-explorer"
+  | "settings";
 
 export interface Toast {
   id: number;
@@ -29,17 +21,11 @@ export interface Toast {
 }
 
 interface UIState {
-  mode: Mode;
-  /** Active module for Classic mode */
-  activeModule: Module;
-  /** Drill-down state for Dynamic mode (kept in store but not exposed via toolbar tabs right now) */
-  dynamicNav: DynamicNav;
-  /** Selected endpoint in Library mode (catalog index). null = no selection. */
+  activeRoute: Route;
+  /** Selected endpoint in API Explorer (catalog index). null = no selection. */
   libraryEndpointIdx: number | null;
   toasts: Toast[];
-  setMode: (mode: Mode) => void;
-  navigate: (module: Module) => void;
-  setDynamicNav: (nav: DynamicNav) => void;
+  navigate: (route: Route) => void;
   setLibraryEndpoint: (idx: number | null) => void;
   addToast: (message: string, type: Toast["type"]) => void;
   dismissToast: (id: number) => void;
@@ -48,15 +34,11 @@ interface UIState {
 let toastId = 0;
 
 export const useUIStore = create<UIState>((set) => ({
-  mode: "classic",
-  activeModule: "settings",
-  dynamicNav: { level: "home" },
+  activeRoute: "settings",
   libraryEndpointIdx: null,
   toasts: [],
 
-  setMode: (mode) => set({ mode }),
-  navigate: (module) => set({ activeModule: module }),
-  setDynamicNav: (dynamicNav) => set({ dynamicNav }),
+  navigate: (activeRoute) => set({ activeRoute }),
   setLibraryEndpoint: (libraryEndpointIdx) => set({ libraryEndpointIdx }),
 
   addToast: (message, type) => {

@@ -116,9 +116,8 @@ export function LookupDevice() {
         </p>
       </header>
 
-      <div className={shared.body}>
-        <div className={styles.lookup}>
-          {/* Left column: search + browse */}
+      <div className={styles.lookup}>
+        {/* Left column: search + browse */}
           <div className={styles.leftCol}>
             <div className={styles.modeTabs}>
               <ModeTab
@@ -262,10 +261,9 @@ export function LookupDevice() {
             </div>
           </div>
 
-          {/* Right column: detail panel */}
-          <div className={styles.rightCol}>
-            {picked ? <DeviceDetail device={picked} /> : <DetailPlaceholder />}
-          </div>
+        {/* Right column: detail panel */}
+        <div className={styles.rightCol}>
+          {picked ? <DeviceDetail device={picked} /> : <DetailPlaceholder />}
         </div>
       </div>
     </div>
