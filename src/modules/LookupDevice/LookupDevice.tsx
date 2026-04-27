@@ -14,6 +14,7 @@ import {
 } from "../../lib/icons";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./LookupDevice.module.css";
+import { DeviceDetail, DetailPlaceholder } from "./DeviceDetail";
 
 type Mode = "search" | "browse-sg" | "browse-og";
 
@@ -341,80 +342,6 @@ function OgNode({
           />
         ))}
     </>
-  );
-}
-
-function DeviceDetail({ device }: { device: Device }) {
-  const compliant = device.complianceStatus === "Compliant";
-  return (
-    <div className={styles.detail}>
-      <div className={styles.detailHeader}>
-        <div>
-          <div className={styles.detailName}>
-            {device.friendlyName || device.serialNumber}
-          </div>
-          <div className={styles.detailSub}>
-            {device.userName} · {device.model}
-          </div>
-        </div>
-        <span
-          className={`${styles.compStatus} ${compliant ? styles.compOk : styles.compBad}`}
-        >
-          <span className={styles.dot} />
-          {device.complianceStatus}
-        </span>
-      </div>
-
-      <div className={styles.detailGrid}>
-        <DetailRow label="Serial" value={device.serialNumber} mono />
-        <DetailRow label="UUID" value={device.udid || device.uuid} mono />
-        {device.imei && <DetailRow label="IMEI" value={device.imei} mono />}
-        {device.macAddress && (
-          <DetailRow label="MAC" value={device.macAddress} mono />
-        )}
-        {device.assetNumber && (
-          <DetailRow label="Asset" value={device.assetNumber} mono />
-        )}
-        <DetailRow label="OS" value={device.os} />
-        <DetailRow label="Platform" value={device.platform} />
-        <DetailRow label="OG" value={device.ogName} />
-        <DetailRow label="Ownership" value={device.ownership} />
-        <DetailRow label="Enrolled" value={device.enrollmentStatus} />
-        <DetailRow
-          label="Last seen"
-          value={new Date(device.lastSeen).toLocaleString()}
-        />
-      </div>
-    </div>
-  );
-}
-
-function DetailPlaceholder() {
-  return (
-    <div className={styles.detailEmpty}>
-      <span className={styles.detailEmptyText}>
-        click a result on the left to see details
-      </span>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className={styles.row}>
-      <span className={styles.rowLabel}>{label}</span>
-      <span className={`${styles.rowValue} ${mono ? styles.rowMono : ""}`}>
-        {value || "—"}
-      </span>
-    </div>
   );
 }
 
