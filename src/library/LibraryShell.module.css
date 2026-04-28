@@ -210,6 +210,81 @@
   color: var(--fg-1);
 }
 
+.customRequestBtn {
+  margin-top: 16px;
+  padding: 6px 14px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-0);
+  background: var(--bg-1);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+}
+
+.customRequestBtn:hover {
+  background: var(--accent);
+  color: var(--bg-0);
+}
+
+.customLabel {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: 0.02em;
+}
+
+.customCloseBtn {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.customCloseBtn:hover {
+  color: var(--fg-0);
+  border-color: var(--accent);
+}
+
+.customRow {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.customMethod {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  width: 90px;
+}
+
+.customPath {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.customWarn {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--err);
+}
+
+.customWarn code {
+  font-family: var(--font-mono);
+  background: var(--bg-2);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
 .detail {
   flex: 1;
   display: flex;

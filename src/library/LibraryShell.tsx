@@ -14,6 +14,7 @@ import styles from "./LibraryShell.module.css";
 export function LibraryShell() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [customMode, setCustomMode] = useState(false);
   const selectedIdx = useUIStore((s) => s.libraryEndpointIdx);
   const setSelected = useUIStore((s) => s.setLibraryEndpoint);
   const endpoints = useCatalogStore((s) => s.endpoints);
@@ -129,15 +130,26 @@ export function LibraryShell() {
         </div>
       </aside>
 
-      {/* Right column — endpoint detail or empty state */}
+      {/* Right column — endpoint detail, custom request, or empty state */}
       <section className={styles.rightCol}>
-        {selected ? <EndpointDetail endpoint={selected} /> : <DetailEmpty />}
+        {customMode ? (
+          <CustomRequest onClose={() => setCustomMode(false)} />
+        ) : selected ? (
+          <EndpointDetail endpoint={selected} />
+        ) : (
+          <DetailEmpty
+            onCustom={() => {
+              setSelected(null);
+              setCustomMode(true);
+            }}
+          />
+        )}
       </section>
     </div>
   );
 }
 
-function DetailEmpty() {
+function DetailEmpty({ onCustom }: { onCustom: () => void }) {
   return (
     <div className={styles.detailEmpty}>
       <div className={styles.detailEmptyText}>
@@ -146,6 +158,17 @@ function DetailEmpty() {
       <div className={styles.detailEmptyHint}>
         Search by method (e.g. <code>POST</code>), path (<code>tags</code>), or
         description (<code>send message</code>).
+      </div>
+      <button
+        type="button"
+        className={styles.customRequestBtn}
+        onClick={onCustom}
+      >
+        + Custom request
+      </button>
+      <div className={styles.detailEmptyHint}>
+        Use this for paths the catalog doesn&apos;t cover (e.g. MAM endpoints
+        that aren&apos;t in the bundled spec).
       </div>
     </div>
   );
@@ -345,6 +368,193 @@ function EndpointDetail({ endpoint }: { endpoint: CatalogEndpoint }) {
                 {result.status === 0
                   ? "no response"
                   : `HTTP ${result.status}`}
+              </span>
+              <span className={styles.responseElapsed}>{result.elapsed}ms</span>
+              <CopyButton text={result.body} />
+            </div>
+            <pre className={styles.responseBody} data-selectable>
+              {result.body}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Custom request (free-form raw runner) -------------------- */
+
+function CustomRequest({ onClose }: { onClose: () => void }) {
+  const [method, setMethod] = useState<"GET" | "POST" | "PUT" | "PATCH" | "DELETE">("GET");
+  const [path, setPath] = useState("/api/");
+  const [body, setBody] = useState("");
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<RunResult | null>(null);
+  const [confirmArmed, setConfirmArmed] = useState(false);
+
+  const usesBody = method !== "GET" && method !== "DELETE";
+  const isDestructive = method === "DELETE" || method === "PUT";
+  const pathValid =
+    path.startsWith("/") &&
+    !path.includes("://") &&
+    !path.startsWith("//") &&
+    !path.toLowerCase().startsWith("/http");
+
+  const handleRun = async () => {
+    setRunning(true);
+    setResult(null);
+    const t0 = performance.now();
+    try {
+      let parsedBody: unknown = undefined;
+      if (usesBody && body.trim()) {
+        try {
+          parsedBody = JSON.parse(body);
+        } catch (e) {
+          setResult({
+            ok: false,
+            status: 0,
+            elapsed: 0,
+            body: `Body is not valid JSON: ${(e as Error).message}`,
+          });
+          setRunning(false);
+          return;
+        }
+      }
+      const resp = await api.runRawEndpoint({
+        method,
+        path,
+        body: parsedBody,
+      });
+      setResult({
+        ok: resp.ok,
+        status: resp.status,
+        elapsed: Math.round(performance.now() - t0),
+        body:
+          typeof resp.body === "string"
+            ? resp.body
+            : JSON.stringify(resp.body, null, 2),
+      });
+    } catch (e) {
+      setResult({
+        ok: false,
+        status: 0,
+        elapsed: Math.round(performance.now() - t0),
+        body: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className={styles.detail}>
+      <div className={styles.detailHead}>
+        <div className={styles.detailHeadTop}>
+          <span className={styles.customLabel}>Custom request</span>
+          <button
+            type="button"
+            className={styles.customCloseBtn}
+            onClick={onClose}
+            title="Back to catalog"
+          >
+            ×
+          </button>
+        </div>
+        <p className={styles.detailDescription}>
+          Free-form raw runner. Use for paths the catalog doesn&apos;t cover —
+          e.g. <code>/api/mam/apps/search</code> on tenants where the MAM spec
+          isn&apos;t bundled.
+        </p>
+      </div>
+
+      <div className={styles.detailBody}>
+        <div className={styles.section}>
+          <div className={styles.sectionHead}>Request</div>
+          <div className={styles.customRow}>
+            <select
+              className={styles.customMethod}
+              value={method}
+              onChange={(e) =>
+                setMethod(e.target.value as typeof method)
+              }
+            >
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="PATCH">PATCH</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+            <input
+              className={styles.customPath}
+              type="text"
+              value={path}
+              placeholder="/api/mam/apps/search?pagesize=10"
+              onChange={(e) => setPath(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </div>
+          {!pathValid && (
+            <div className={styles.customWarn}>
+              Path must start with <code>/</code> and not contain a protocol.
+            </div>
+          )}
+        </div>
+
+        {usesBody && (
+          <div className={styles.section}>
+            <div className={styles.sectionHead}>Request body (JSON)</div>
+            <textarea
+              className={styles.bodyInput}
+              placeholder={`{}`}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </div>
+        )}
+
+        <div className={styles.runRow}>
+          <span className={styles.runPath}>
+            <span className={styles.runMethod}>{method}</span>{" "}
+            <span className={styles.runResolvedPath}>{path}</span>
+          </span>
+          {isDestructive && !confirmArmed ? (
+            <button
+              className={`${styles.runBtn} ${styles.runBtnDestructive}`}
+              onClick={() => setConfirmArmed(true)}
+              disabled={!pathValid || running}
+              title="Click once to arm — destructive request"
+            >
+              Arm {method}…
+            </button>
+          ) : (
+            <button
+              className={`${styles.runBtn} ${isDestructive ? styles.runBtnDestructive : ""}`}
+              onClick={async () => {
+                await handleRun();
+                if (isDestructive) setConfirmArmed(false);
+              }}
+              disabled={!pathValid || running}
+            >
+              {running
+                ? "Running…"
+                : isDestructive
+                  ? `Confirm ${method}`
+                  : "Run"}
+            </button>
+          )}
+        </div>
+
+        {result && (
+          <div className={styles.section}>
+            <div className={styles.sectionHead}>
+              <span>Response</span>
+              <span
+                className={`${styles.responseStatus} ${result.ok ? styles.responseOk : styles.responseErr}`}
+              >
+                {result.status === 0 ? "no response" : `HTTP ${result.status}`}
               </span>
               <span className={styles.responseElapsed}>{result.elapsed}ms</span>
               <CopyButton text={result.body} />
