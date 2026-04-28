@@ -49,6 +49,7 @@
   --row-h: 22px;
   --sidebar-w: 220px;
   --detail-w: 320px;
+  --header-h: 72px;
 }
 
 :root[data-theme="light"] {

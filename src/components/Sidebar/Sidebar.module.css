@@ -7,6 +7,12 @@
   overflow: hidden;
 }
 
+.headerBand {
+  height: var(--header-h);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 .scroll {
   flex: 1;
   overflow-y: auto;

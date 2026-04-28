@@ -55,6 +55,7 @@ export function Sidebar() {
 
   return (
     <aside className={styles.sidebar}>
+      <div className={styles.headerBand} />
       <div className={styles.scroll}>
         <div className={styles.section}>
           <div className={styles.navList}>{NOUNS.map(renderItem)}</div>

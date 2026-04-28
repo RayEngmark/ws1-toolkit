@@ -28,27 +28,31 @@ export function StatusBar() {
 
   return (
     <footer className={styles.bar}>
-      <span
-        className={`${styles.segment} ${styles.status} ${isConnected ? styles.connected : styles.disconnected}`}
-      >
-        <CircleFilled size={8} />
-        <span>{isConnected ? "Connected" : "Disconnected"}</span>
-      </span>
-      <span className={styles.segment}>{tenantHost}</span>
-      <span className={styles.segment}>{ROUTE_LABELS[activeRoute]}</span>
-      <span className={styles.spacer} />
-      {selectionCount > 0 && (
-        <button
-          className={`${styles.segment} ${styles.selectionPill}`}
-          onClick={clearSelection}
-          title="Clear selection"
+      <div className={styles.left}>
+        <span
+          className={`${styles.segment} ${styles.status} ${isConnected ? styles.connected : styles.disconnected}`}
         >
-          <span>{selectionCount} selected</span>
-          <span className={styles.clearLabel}>× clear</span>
-        </button>
-      )}
-      <span className={styles.segment}>UTF-8</span>
-      <span className={styles.segment}>v0.1.0</span>
+          <CircleFilled size={8} />
+          <span>{isConnected ? "Connected" : "Disconnected"}</span>
+        </span>
+        <span className={styles.segment}>{tenantHost}</span>
+      </div>
+      <div className={styles.right}>
+        <span className={styles.segment}>{ROUTE_LABELS[activeRoute]}</span>
+        <span className={styles.spacer} />
+        {selectionCount > 0 && (
+          <button
+            className={`${styles.segment} ${styles.selectionPill}`}
+            onClick={clearSelection}
+            title="Clear selection"
+          >
+            <span>{selectionCount} selected</span>
+            <span className={styles.clearLabel}>× clear</span>
+          </button>
+        )}
+        <span className={styles.segment}>UTF-8</span>
+        <span className={styles.segment}>v0.1.0</span>
+      </div>
     </footer>
   );
 }
