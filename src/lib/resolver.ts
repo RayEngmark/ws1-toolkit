@@ -27,12 +27,20 @@ export function detectType(line: string): IdentifierType {
   if (/^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/i.test(v)) return "username";
   if (/^\d{1,8}$/.test(v)) return "assetTag";
   if (/\s/.test(v) || /['"]/.test(v)) return "friendlyName";
+  // Multi-segment dashed identifier with letters in it ("hnikt-boo-30075",
+  // "lab-mac-005") — looks like a hostname / friendly name. Plain serials
+  // sometimes have one dash, so require at least two to avoid false
+  // positives on real serial numbers.
+  if (/-/.test(v) && /[a-z]/i.test(v) && (v.match(/-/g) || []).length >= 2) {
+    return "friendlyName";
+  }
   return "serial";
 }
 
 export type SearchOverride =
   | "auto"
   | "serial"
+  | "friendlyName"
   | "username"
   | "imei"
   | "macAddress"
@@ -42,6 +50,7 @@ export type SearchOverride =
 
 const OVERRIDE_TO_SEARCH_BY: Record<Exclude<SearchOverride, "auto">, string> = {
   serial: "Serialnumber",
+  friendlyName: "DeviceFriendlyName",
   username: "Username",
   imei: "ImeiNumber",
   macAddress: "Macaddress",
@@ -62,7 +71,23 @@ export interface ResolveResult {
  * declare what it is. Six calls are alternate-id lookups (single device
  * or 404 each); one is a username filter (list).
  */
-async function fanOut(line: string, ogId: number | null): Promise<Device[]> {
+async function fanOut(
+  line: string,
+  ogId: number | null,
+  detectedType: IdentifierType
+): Promise<Device[]> {
+  // Hostname-shaped inputs (`hnikt-boo-30075`) can only resolve via friendly
+  // name. The alt-id fanout would be 7 wasted calls. Skip straight to the
+  // paginated friendly-name path which the backend handles.
+  if (detectedType === "friendlyName") {
+    try {
+      const r = await api.searchDevices(line, "DeviceFriendlyName", 0, 50, ogId);
+      return dedupeById(r.devices);
+    } catch {
+      return [];
+    }
+  }
+
   const altIds = [
     "Serialnumber",
     "Macaddress",
@@ -83,7 +108,19 @@ async function fanOut(line: string, ogId: number | null): Promise<Device[]> {
     .catch(() => [] as Device[]);
 
   const all = (await Promise.all([...altCalls, userCall])).flat();
-  return dedupeById(all);
+  const fast = dedupeById(all);
+  if (fast.length > 0) return fast;
+
+  // Last-resort escalation: nothing matched any id type and the input could
+  // plausibly be a name (asset tag input is also fair game here). Try the
+  // paginated name search. Cost is paid only on a "miss" — typical hits
+  // return immediately above.
+  try {
+    const r = await api.searchDevices(line, "DeviceFriendlyName", 0, 50, ogId);
+    return dedupeById(r.devices);
+  } catch {
+    return [];
+  }
 }
 
 async function singleLookup(
@@ -132,7 +169,7 @@ export async function resolveLines(
 
       const devices =
         override === "auto"
-          ? await fanOut(line, ogId)
+          ? await fanOut(line, ogId, detectedType)
           : await singleLookup(line, OVERRIDE_TO_SEARCH_BY[override], ogId);
 
       if (devices.length === 0) {

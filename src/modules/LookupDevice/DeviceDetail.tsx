@@ -246,10 +246,13 @@ const QUICK_ACTIONS: QuickAction[] = [
       api.runRawEndpoint({
         method: "POST",
         path: `/api/mdm/devices/${d.id}/commands/finddevice`,
-        // The endpoint expects a FindDevice JSON body (Platform/Message/
-        // NumberOfRepetitions etc., all optional per the spec). Sending an
-        // empty {} satisfies the parser; the device handles defaults.
-        body: {},
+        // FindDevice spec lists every body field as optional, but in practice
+        // tenants 422 when Platform is missing because the command dispatcher
+        // routes per-platform handlers. Send the device's known platform so
+        // the request validates cleanly.
+        body: {
+          Platform: d.platform,
+        },
       }),
   },
   {
@@ -321,6 +324,22 @@ function DeviceDrawerLaunchers({ device }: { device: Device }) {
   );
 }
 
+function summarizeBody(body: unknown): string {
+  if (body == null) return "";
+  if (typeof body === "string") return body.slice(0, 200);
+  if (typeof body === "object") {
+    const o = body as Record<string, unknown>;
+    const msg = o.message ?? o.Message ?? o.errorMessage ?? o.error_message;
+    if (typeof msg === "string") return msg.slice(0, 200);
+    try {
+      return JSON.stringify(body).slice(0, 200);
+    } catch {
+      return "";
+    }
+  }
+  return String(body).slice(0, 200);
+}
+
 function QuickActions({ device }: { device: Device }) {
   const addToast = useUIStore((s) => s.addToast);
   const [running, setRunning] = useState<string | null>(null);
@@ -329,8 +348,17 @@ function QuickActions({ device }: { device: Device }) {
     setRunning(a.label);
     try {
       const r = await a.run(device);
-      if (r.ok) addToast(`${a.label} sent`, "success");
-      else addToast(`${a.label} failed (HTTP ${r.status})`, "error");
+      if (r.ok) {
+        addToast(`${a.label} sent`, "success");
+      } else {
+        // Surface the body so 501 ("command not supported on platform") or
+        // 403 ("missing scope") show the actual reason, not just a number.
+        const detail = summarizeBody(r.body);
+        addToast(
+          `${a.label} failed (HTTP ${r.status})${detail ? ` — ${detail}` : ""}`,
+          "error"
+        );
+      }
     } catch (e) {
       addToast(
         `${a.label} failed: ${e instanceof Error ? e.message : "unknown"}`,

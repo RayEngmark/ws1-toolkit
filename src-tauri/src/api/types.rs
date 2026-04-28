@@ -228,6 +228,10 @@ impl From<OGEntry> for OrgGroup {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ProfileSearchResponse {
+    // `/api/mdm/profiles/search` v1 / v2 response wraps the list in `ProfileList`
+    // (per mdmv2 spec → ProfileSearchResultV2Entity). Older tenants used
+    // `Profiles`; newer v3 uses lowercase `profiles`. Accept all three.
+    #[serde(rename = "ProfileList", alias = "Profiles", alias = "profiles")]
     pub profiles: Option<Vec<ProfileEntry>>,
 }
 
@@ -271,6 +275,16 @@ impl From<ProfileEntry> for Profile {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AppSearchResponse {
+    // The MAM apps search response wrapper varies by tenant: most return
+    // `Application` (singular), some `Apps`, and the internal-only variant
+    // sometimes returns `application` lowercase. We don't bundle a MAM spec,
+    // so accept every common shape rather than guess.
+    #[serde(
+        rename = "Application",
+        alias = "Apps",
+        alias = "application",
+        alias = "InternalApplications"
+    )]
     pub application: Option<Vec<AppEntry>>,
 }
 

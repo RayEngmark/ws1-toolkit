@@ -69,31 +69,52 @@ pub async fn search_devices(
             })
         }
         // Friendly name and asset tag aren't filter params on /devices/search.
-        // Fall back to fetching the first 500 devices and filtering client-side
-        // by the matching field. Slower than a server-side filter but the only
-        // way to make name lookups work on this tenant's API surface — better
-        // than silently returning nothing.
+        // We have to fetch every device in the active scope and filter
+        // client-side. Paginate up to MAX_PAGES * pagesize devices so this
+        // works on tenants with more than 500 devices — capped to avoid
+        // runaway. The previous single-page (500) limit silently dropped
+        // anything past page 1, which is what made "search by hostname" feel
+        // broken on the user's tenant.
         "DeviceFriendlyName" | "Assettag" => {
-            let path = format!("/api/mdm/devices/search?pagesize=500{}", lgid_q);
-            let resp: DeviceSearchResponse = client.get(&path).await?;
+            const PAGE_SIZE: i32 = 500;
+            const MAX_PAGES: i32 = 20; // 10k devices ceiling — enough for the team's fleet.
             let needle = query.to_lowercase();
-            let devices: Vec<Device> = resp
-                .devices
-                .unwrap_or_default()
-                .into_iter()
-                .map(Device::from)
-                .filter(|d| {
+            if needle.is_empty() {
+                return Ok(DeviceSearchResult {
+                    devices: vec![],
+                    page: 0,
+                    page_size: 0,
+                    total: 0,
+                });
+            }
+            let mut matches: Vec<Device> = Vec::new();
+            for page_idx in 0..MAX_PAGES {
+                let path = format!(
+                    "/api/mdm/devices/search?pagesize={}&page={}{}",
+                    PAGE_SIZE, page_idx, lgid_q
+                );
+                let resp: DeviceSearchResponse = client.get(&path).await?;
+                let batch: Vec<DeviceSummary> = resp.devices.unwrap_or_default();
+                let batch_len = batch.len();
+                for s in batch {
+                    let d: Device = s.into();
                     let hay = if search_by == "DeviceFriendlyName" {
                         d.friendly_name.to_lowercase()
                     } else {
                         d.asset_number.to_lowercase()
                     };
-                    !needle.is_empty() && hay.contains(&needle)
-                })
-                .collect();
-            let total = devices.len() as i32;
+                    if hay.contains(&needle) {
+                        matches.push(d);
+                    }
+                }
+                // Last page reached when WS1 returned fewer rows than requested.
+                if (batch_len as i32) < PAGE_SIZE {
+                    break;
+                }
+            }
+            let total = matches.len() as i32;
             Ok(DeviceSearchResult {
-                devices,
+                devices: matches,
                 page: 0,
                 page_size: total,
                 total,

@@ -5,6 +5,7 @@ import * as api from "../../ipc/client";
 import type { BulkActionResult, SmartGroup } from "../../ipc/contracts";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { useEntryContext } from "../../dynamic/entryContext";
 import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
@@ -14,6 +15,7 @@ export function AddToSmartGroup() {
   const sgFirst = ctx?.objectKey === "smartgroups";
   const selection = useSelectionStore((s) => s.devices);
   const clearSelection = useSelectionStore((s) => s.clear);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
   const [sgId, setSgId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -21,14 +23,13 @@ export function AddToSmartGroup() {
   const addToast = useUIStore((s) => s.addToast);
 
   const loadSgs = async () => {
-    if (sgs.length > 0) return;
-    setSgs(await api.searchSmartGroups());
+    setSgs(await api.searchSmartGroups(activeOgId));
   };
 
   useEffect(() => {
     loadSgs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeOgId]);
 
   const selected = sgs.find((s) => s.id === sgId);
   const ready = selection.length > 0 && sgId !== null;

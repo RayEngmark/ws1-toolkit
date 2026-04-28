@@ -3,6 +3,7 @@ import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
 import type { App, AppPushMode, BulkActionResult, SmartGroup } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { useEntryContext } from "../../dynamic/entryContext";
 import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
@@ -20,21 +21,20 @@ export function AssignApp() {
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<{ app: string; sg: string; result: BulkActionResult } | null>(null);
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
 
   const loadApps = async () => {
-    if (apps.length > 0) return;
-    setApps(await api.getApps());
+    setApps(await api.getApps(activeOgId));
   };
   const loadSgs = async () => {
-    if (sgs.length > 0) return;
-    setSgs(await api.searchSmartGroups());
+    setSgs(await api.searchSmartGroups(activeOgId));
   };
 
   useEffect(() => {
     loadApps();
     loadSgs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeOgId]);
 
   const selectedApp = apps.find((a) => a.id === appId);
   const selectedSg = sgs.find((s) => s.id === sgId);

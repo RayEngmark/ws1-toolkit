@@ -8,12 +8,23 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 /// Wraps `GET /api/mdm/smartgroups/search`.
-/// Optional params: name, organizationgroupid, managedbyorganizationgroupid, orderby, page, pagesize.
-/// Confirmed via PyVMwareAirWatch + workspace-one-uem-mcp.
+/// Optional params: name, organizationgroupid, managedbyorganizationgroupid,
+/// orderby, page, pagesize. The frontend passes the active OG scope so the
+/// list reflects the operator's current OG selection.
 #[tauri::command]
-pub async fn search_smart_groups(state: State<'_, AppState>) -> Result<Vec<SmartGroup>, AppError> {
+pub async fn search_smart_groups(
+    state: State<'_, AppState>,
+    og_id: Option<i64>,
+) -> Result<Vec<SmartGroup>, AppError> {
     let client = WS1Client::from_state(&state).await?;
-    let resp: SmartGroupSearchResponse = client.get("/api/mdm/smartgroups/search").await?;
+    let path = match og_id {
+        Some(id) => format!(
+            "/api/mdm/smartgroups/search?organizationgroupid={}&pagesize=500",
+            id
+        ),
+        None => "/api/mdm/smartgroups/search?pagesize=500".to_string(),
+    };
+    let resp: SmartGroupSearchResponse = client.get(&path).await?;
     Ok(resp
         .smart_groups
         .unwrap_or_default()

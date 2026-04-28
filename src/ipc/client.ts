@@ -105,7 +105,12 @@ export const bulkMoveDevices = (
 
 // -- Profiles --
 
-export const getProfiles = (): Promise<Profile[]> => ipc("get_profiles");
+/**
+ * Fetch profiles in the active OG scope (or tenant root when null).
+ * Wraps `GET /api/mdm/profiles/search?organizationgroupid={ogId}`.
+ */
+export const getProfiles = (ogId: number | null): Promise<Profile[]> =>
+  ipc("get_profiles", { ogId });
 
 export const assignProfile = (
   profileId: number,
@@ -115,7 +120,12 @@ export const assignProfile = (
 
 // -- Apps --
 
-export const getApps = (): Promise<App[]> => ipc("get_apps");
+/**
+ * Fetch internal apps in the active OG scope (or tenant root when null).
+ * Wraps `GET /api/mam/apps/search?locationgroupid={ogId}`.
+ */
+export const getApps = (ogId: number | null): Promise<App[]> =>
+  ipc("get_apps", { ogId });
 
 /**
  * Assign an internal app to one or more smart groups.
@@ -150,8 +160,12 @@ export const removeProfileFromDevices = (
 
 // -- Smart Groups --
 
-export const searchSmartGroups = (): Promise<SmartGroup[]> =>
-  ipc("search_smart_groups");
+/**
+ * Fetch smart groups in the active OG scope (or all when null).
+ * Wraps `GET /api/mdm/smartgroups/search?organizationgroupid={ogId}`.
+ */
+export const searchSmartGroups = (ogId: number | null): Promise<SmartGroup[]> =>
+  ipc("search_smart_groups", { ogId });
 
 export const getSmartGroup = (id: number): Promise<SmartGroup | null> =>
   ipc("get_smart_group", { id });

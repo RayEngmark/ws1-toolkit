@@ -89,7 +89,7 @@ export function TagDevices() {
                 items={tags.map((t) => ({
                   id: t.id,
                   primary: t.tagName,
-                  meta: `${t.deviceCount} devices`,
+                  meta: `ID ${t.id}`,
                 }))}
                 selectedId={tagId}
                 onSelect={setTagId}
@@ -107,7 +107,7 @@ export function TagDevices() {
                   items={tags.map((t) => ({
                     id: t.id,
                     primary: t.tagName,
-                    meta: `${t.deviceCount} devices`,
+                    meta: `ID ${t.id}`,
                   }))}
                   selectedId={tagId}
                   onSelect={setTagId}

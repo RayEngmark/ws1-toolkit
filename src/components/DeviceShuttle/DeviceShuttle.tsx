@@ -4,6 +4,7 @@ import type { Device, OrgGroup, SmartGroup } from "../../ipc/contracts";
 import { resolveLines } from "../../lib/resolver";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import {
   ChevronDown,
   ChevronRight,
@@ -27,6 +28,7 @@ type Source = "search" | "smartgroup" | "og";
  */
 export function DeviceShuttle() {
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [source, setSource] = useState<Source>("search");
 
   // Pool (results)
@@ -86,20 +88,18 @@ export function DeviceShuttle() {
     };
   }, [source, searchQuery]);
 
-  // Smart Group mode
+  // Smart Group mode — refetch when scope changes so the dropdown stays in sync
   useEffect(() => {
     if (source !== "smartgroup") return;
-    if (sgs.length === 0) {
-      api
-        .searchSmartGroups()
-        .then(setSgs)
-        .catch((e) =>
-          addToast(
-            `Smart group list failed: ${e instanceof Error ? e.message : String(e)}`,
-            "error"
-          )
-        );
-    }
+    api
+      .searchSmartGroups(activeOgId)
+      .then(setSgs)
+      .catch((e) =>
+        addToast(
+          `Smart group list failed: ${e instanceof Error ? e.message : String(e)}`,
+          "error"
+        )
+      );
     if (sgId !== null) {
       setPoolLoading(true);
       api
@@ -119,7 +119,7 @@ export function DeviceShuttle() {
     } else {
       setPool([]);
     }
-  }, [source, sgId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [source, sgId, activeOgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // OG mode
   useEffect(() => {

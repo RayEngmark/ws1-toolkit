@@ -7,23 +7,82 @@ use crate::api::types::{
 use crate::error::AppError;
 use crate::state::AppState;
 
+/// `/api/system/groups/search` returns a *flat* list — there's no children
+/// nesting on this endpoint regardless of `orderby`. We rebuild the tree
+/// here from each entry's `ParentLocationGroup.Id`, returning only roots
+/// (entries whose parent isn't present in the result, or who have no parent).
+/// One network call instead of recursive /children fetches.
 #[tauri::command]
 pub async fn search_org_groups(
     state: State<'_, AppState>,
 ) -> Result<Vec<OrgGroup>, AppError> {
     let client = WS1Client::from_state(&state).await?;
 
-    let path = "/api/system/groups/search?orderby=name";
+    // pagesize=500 is the documented max for /groups/search. Multi-tenant
+    // estates rarely exceed that; if they do, we'd paginate here. Keep simple.
+    let path = "/api/system/groups/search?pagesize=500&orderby=name";
     let resp: OGSearchResponse = client.get(path).await?;
 
-    let groups: Vec<OrgGroup> = resp
+    let flat: Vec<OrgGroup> = resp
         .organization_groups
         .unwrap_or_default()
         .into_iter()
         .map(OrgGroup::from)
         .collect();
 
-    Ok(groups)
+    // Reconstruct the tree. by_id owns the entries; child_map maps each
+    // parent id to its child ids so we can DFS from each root and attach
+    // children regardless of source order.
+    use std::collections::HashMap;
+    let mut by_id: HashMap<i64, OrgGroup> = HashMap::new();
+    let mut child_map: HashMap<i64, Vec<i64>> = HashMap::new();
+    let mut all_ids: Vec<i64> = Vec::with_capacity(flat.len());
+    for og in flat {
+        if let Some(pid) = og.parent_id {
+            child_map.entry(pid).or_default().push(og.id);
+        }
+        all_ids.push(og.id);
+        by_id.insert(og.id, og);
+    }
+
+    // Roots = any node whose parent isn't in our result set (or has no parent).
+    let mut root_ids: Vec<i64> = Vec::new();
+    for id in &all_ids {
+        let og = by_id.get(id).expect("present");
+        let is_root = match og.parent_id {
+            Some(pid) => !by_id.contains_key(&pid) || pid == og.id,
+            None => true,
+        };
+        if is_root {
+            root_ids.push(*id);
+        }
+    }
+
+    fn build(
+        id: i64,
+        by_id: &mut HashMap<i64, OrgGroup>,
+        child_map: &HashMap<i64, Vec<i64>>,
+    ) -> OrgGroup {
+        let mut og = by_id.remove(&id).expect("entry");
+        og.children.clear();
+        if let Some(child_ids) = child_map.get(&id) {
+            for cid in child_ids {
+                if by_id.contains_key(cid) {
+                    og.children.push(build(*cid, by_id, child_map));
+                }
+            }
+        }
+        og.children
+            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        og
+    }
+
+    let mut roots: Vec<OrgGroup> = root_ids
+        .iter()
+        .map(|id| build(*id, &mut by_id, &child_map))
+        .collect();
+    roots.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    Ok(roots)
 }
 
 #[tauri::command]
@@ -98,7 +157,9 @@ pub async fn move_device_to_og(
         device_id, target_og_id
     );
 
-    client.post_no_body(&path, &serde_json::json!({})).await
+    // PUT per the spec — /devices/{id}/commands/changeorganizationgroup/{ogid}
+    // returns 405 Method Not Allowed on POST.
+    client.put_no_body(&path, &serde_json::json!({})).await
 }
 
 #[tauri::command]
@@ -122,7 +183,7 @@ pub async fn bulk_move_devices(
             device_id, target_og_id
         );
 
-        match client.post_no_body(&path, &serde_json::json!({})).await {
+        match client.put_no_body(&path, &serde_json::json!({})).await {
             Ok(()) => result.accepted += 1,
             Err(e) => {
                 result.failed += 1;

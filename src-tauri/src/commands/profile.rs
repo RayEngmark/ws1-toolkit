@@ -5,13 +5,26 @@ use crate::api::types::{BulkActionResult, Profile, ProfileSearchResponse};
 use crate::error::AppError;
 use crate::state::AppState;
 
-/// Wraps `GET /api/mdm/profiles/search`. Confirmed via PyVMwareAirWatch + multiple
-/// production scripts. Supports filters via query params: type, profilename,
-/// organizationgroupid, platform, status, ownership.
+/// Wraps `GET /api/mdm/profiles/search`. Filters via query params: type,
+/// profilename, organizationgroupid, platform, status, ownership.
+/// The frontend passes the active OG scope so the listing reflects the
+/// operator's current OG selection. `status` is intentionally NOT filtered —
+/// some tenants store enum codes rather than the literal "Active" string;
+/// surfacing every profile is the safe default and the UI can filter client-side.
 #[tauri::command]
-pub async fn get_profiles(state: State<'_, AppState>) -> Result<Vec<Profile>, AppError> {
+pub async fn get_profiles(
+    state: State<'_, AppState>,
+    og_id: Option<i64>,
+) -> Result<Vec<Profile>, AppError> {
     let client = WS1Client::from_state(&state).await?;
-    let resp: ProfileSearchResponse = client.get("/api/mdm/profiles/search?status=Active").await?;
+    let path = match og_id {
+        Some(id) => format!(
+            "/api/mdm/profiles/search?organizationgroupid={}&pagesize=500",
+            id
+        ),
+        None => "/api/mdm/profiles/search?pagesize=500".to_string(),
+    };
+    let resp: ProfileSearchResponse = client.get(&path).await?;
     Ok(resp
         .profiles
         .unwrap_or_default()

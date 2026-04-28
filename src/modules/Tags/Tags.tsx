@@ -84,7 +84,7 @@ export function Tags() {
       renderRow={(t) => (
         <>
           <span className={styles.rowName}>{t.tagName}</span>
-          <span className={styles.rowMeta}>{t.deviceCount} devices</span>
+          <span className={styles.rowMeta}>ID {t.id}</span>
         </>
       )}
       renderDetail={(t) => (
@@ -94,7 +94,6 @@ export function Tags() {
           rows={[
             { label: "ID", value: t.id, mono: true },
             { label: "Name", value: t.tagName },
-            { label: "Devices", value: t.deviceCount, mono: true },
           ]}
           raw={t}
         />

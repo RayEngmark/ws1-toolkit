@@ -79,13 +79,28 @@ impl<'a> WS1Client<'a> {
 
     /// POST that returns no meaningful body (204 / empty response)
     pub async fn post_no_body(&self, path: &str, body: &serde_json::Value) -> Result<(), AppError> {
+        self.send_no_body(Method::POST, path, body).await
+    }
+
+    /// PUT that returns no meaningful body. Used by command endpoints whose
+    /// HTTP method is documented as PUT (e.g. changeorganizationgroup).
+    pub async fn put_no_body(&self, path: &str, body: &serde_json::Value) -> Result<(), AppError> {
+        self.send_no_body(Method::PUT, path, body).await
+    }
+
+    async fn send_no_body(
+        &self,
+        method: Method,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<(), AppError> {
         let url = format!("{}{}", self.base_url(), path);
         let headers = self.get_headers().await?;
 
         let resp = self
             .state
             .client
-            .post(&url)
+            .request(method, &url)
             .headers(headers)
             .json(body)
             .send()

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { SmartGroup } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { NounPage } from "../../components/NounPage/NounPage";
 import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./SmartGroups.module.css";
 
 export function SmartGroups() {
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [items, setItems] = useState<SmartGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const openDrawer = useUIStore((s) => s.openDrawer);
@@ -17,7 +19,7 @@ export function SmartGroups() {
     setItems(null);
     setError(null);
     api
-      .searchSmartGroups()
+      .searchSmartGroups(activeOgId)
       .then((sgs) => {
         if (!cancelled) setItems(sgs);
       })
@@ -28,7 +30,7 @@ export function SmartGroups() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeOgId]);
 
   return (
     <NounPage

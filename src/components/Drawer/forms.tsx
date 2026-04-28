@@ -167,6 +167,7 @@ export function SmartGroupMembershipDrawer({
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [busy, setBusy] = useState(false);
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
   const [sgId, setSgId] = useState<number | null>(ctx.smartGroupId ?? null);
@@ -175,8 +176,8 @@ export function SmartGroupMembershipDrawer({
   const isRemove = ctx.mode === "remove";
 
   useEffect(() => {
-    if (!ctx.smartGroupId) api.searchSmartGroups().then(setSgs);
-  }, [ctx.smartGroupId]);
+    if (!ctx.smartGroupId) api.searchSmartGroups(activeOgId).then(setSgs);
+  }, [ctx.smartGroupId, activeOgId]);
 
   const deviceIds = lockedDeviceIds ?? devices.map((d) => d.id);
   const ready = sgId !== null && deviceIds.length > 0 && !busy;
@@ -244,6 +245,7 @@ export function AssignProfileDrawer({
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [busy, setBusy] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [profileId, setProfileId] = useState<number | null>(
@@ -253,8 +255,8 @@ export function AssignProfileDrawer({
   const lockedDeviceIds = ctx.deviceIds;
 
   useEffect(() => {
-    if (!ctx.profileId) api.getProfiles().then(setProfiles);
-  }, [ctx.profileId]);
+    if (!ctx.profileId) api.getProfiles(activeOgId).then(setProfiles);
+  }, [ctx.profileId, activeOgId]);
 
   // For per-device profile install we need serials. If devices were
   // resolved here (paste list), we have them. If lockedDeviceIds came
@@ -405,6 +407,7 @@ export function AssignAppDrawer({
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [busy, setBusy] = useState(false);
   const [apps, setApps] = useState<TargetItem[]>([]);
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
@@ -413,9 +416,9 @@ export function AssignAppDrawer({
   const [pushMode, setPushMode] = useState<AppPushMode>("Auto");
 
   useEffect(() => {
-    if (!ctx.appId) api.getApps().then((a) => setApps(a.map(toAppItem)));
-    if (!ctx.smartGroupId) api.searchSmartGroups().then(setSgs);
-  }, [ctx.appId, ctx.smartGroupId]);
+    if (!ctx.appId) api.getApps(activeOgId).then((a) => setApps(a.map(toAppItem)));
+    if (!ctx.smartGroupId) api.searchSmartGroups(activeOgId).then(setSgs);
+  }, [ctx.appId, ctx.smartGroupId, activeOgId]);
 
   const ready = appId !== null && sgId !== null && !busy;
 
@@ -542,7 +545,7 @@ function toTagItem(t: Tag): TargetItem {
   return {
     id: t.id,
     primary: t.tagName,
-    meta: `${t.deviceCount}`,
+    meta: `ID ${t.id}`,
   };
 }
 

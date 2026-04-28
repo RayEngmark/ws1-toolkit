@@ -2,24 +2,25 @@ import { useEffect, useState } from "react";
 import { TargetPicker } from "../../components/TargetPicker/TargetPicker";
 import * as api from "../../ipc/client";
 import type { Device, SmartGroup } from "../../ipc/contracts";
+import { useScopeStore } from "../../state/scopeStore";
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./LookupSmartGroup.module.css";
 
 export function LookupSmartGroup() {
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [sgs, setSgs] = useState<SmartGroup[]>([]);
   const [sgId, setSgId] = useState<number | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
 
   const loadSgs = async () => {
-    if (sgs.length > 0) return;
-    setSgs(await api.searchSmartGroups());
+    setSgs(await api.searchSmartGroups(activeOgId));
   };
 
   useEffect(() => {
     loadSgs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeOgId]);
 
   useEffect(() => {
     if (sgId === null) {

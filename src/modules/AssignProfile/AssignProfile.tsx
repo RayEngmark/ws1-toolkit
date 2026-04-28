@@ -10,6 +10,7 @@ import type {
 } from "../../ipc/contracts";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { useEntryContext } from "../../dynamic/entryContext";
 import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
@@ -49,21 +50,20 @@ export function AssignProfile() {
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
 
   const loadProfiles = async () => {
-    if (profiles.length > 0) return;
-    setProfiles(await api.getProfiles());
+    setProfiles(await api.getProfiles(activeOgId));
   };
   const loadSgs = async () => {
-    if (sgs.length > 0) return;
-    setSgs(await api.searchSmartGroups());
+    setSgs(await api.searchSmartGroups(activeOgId));
   };
 
   useEffect(() => {
     loadProfiles();
     if (target === "smartgroup") loadSgs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeOgId, target]);
 
   const selectedProfile = profiles.find((p) => p.id === profileId);
   const selectedSg = sgs.find((s) => s.id === sgId);

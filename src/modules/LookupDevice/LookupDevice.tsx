@@ -16,11 +16,13 @@ import shared from "../_shared/ActionPage.module.css";
 import styles from "./LookupDevice.module.css";
 import { DeviceDetail, DetailPlaceholder } from "./DeviceDetail";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 
 type Mode = "search" | "browse-sg" | "browse-og";
 
 export function LookupDevice() {
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [mode, setMode] = useState<Mode>("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Device[]>([]);
@@ -79,11 +81,11 @@ export function LookupDevice() {
     };
   }, [mode, query, override]);
 
-  // Load reference data when entering browse modes
+  // Load reference data when entering browse modes; refetch when scope changes.
   useEffect(() => {
-    if (mode === "browse-sg" && sgs.length === 0) {
+    if (mode === "browse-sg") {
       api
-        .searchSmartGroups()
+        .searchSmartGroups(activeOgId)
         .then(setSgs)
         .catch((e) =>
           addToast(
@@ -93,6 +95,8 @@ export function LookupDevice() {
         );
     }
     if (mode === "browse-og" && ogTree.length === 0) {
+      // OG tree is global — fetched once. Browsing devices in a specific OG
+      // is then a per-pick fetch via getDevicesInOg.
       api
         .searchOrgGroups()
         .then((tree) => {
@@ -106,7 +110,7 @@ export function LookupDevice() {
           )
         );
     }
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode, activeOgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickSg = async (id: number) => {
     setLoading(true);
@@ -194,6 +198,7 @@ export function LookupDevice() {
                   >
                     <option value="auto">Auto</option>
                     <option value="serial">Serial</option>
+                    <option value="friendlyName">Name</option>
                     <option value="username">User</option>
                     <option value="imei">IMEI</option>
                     <option value="macAddress">MAC</option>

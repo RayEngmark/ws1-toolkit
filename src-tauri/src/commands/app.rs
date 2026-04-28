@@ -5,12 +5,23 @@ use crate::api::types::{App, AppSearchResponse, BulkActionResult};
 use crate::error::AppError;
 use crate::state::AppState;
 
-/// Wraps `GET /api/mam/apps/search`. Confirmed via Omnissa TechZone +
-/// PyVMwareAirWatch references. Returns internal apps in default scope.
+/// Wraps `GET /api/mam/apps/search`. Returns internal apps in the active
+/// OG (or tenant root if scope is unset). MAM endpoints accept the same
+/// `locationgroupid` filter as MDM.
 #[tauri::command]
-pub async fn get_apps(state: State<'_, AppState>) -> Result<Vec<App>, AppError> {
+pub async fn get_apps(
+    state: State<'_, AppState>,
+    og_id: Option<i64>,
+) -> Result<Vec<App>, AppError> {
     let client = WS1Client::from_state(&state).await?;
-    let resp: AppSearchResponse = client.get("/api/mam/apps/search").await?;
+    let path = match og_id {
+        Some(id) => format!(
+            "/api/mam/apps/search?locationgroupid={}&pagesize=500",
+            id
+        ),
+        None => "/api/mam/apps/search?pagesize=500".to_string(),
+    };
+    let resp: AppSearchResponse = client.get(&path).await?;
     Ok(resp
         .application
         .unwrap_or_default()
