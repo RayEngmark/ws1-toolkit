@@ -127,19 +127,21 @@ pub async fn search_devices(
     }
 }
 
+/// Wraps `GET /api/mdm/devices/{uuid}/tags`. Per `mdmv1` spec the path
+/// parameter is the device UUID (not the numeric id) — the numeric form
+/// works on some legacy tenants but isn't documented post-Omnissa.
 #[tauri::command]
 pub async fn get_device_tags(
     state: State<'_, AppState>,
-    device_id: i64,
+    device_uuid: String,
 ) -> Result<Vec<crate::api::types::Tag>, AppError> {
     let client = WS1Client::from_state(&state).await?;
 
-    let path = format!("/api/mdm/devices/{}/tags", device_id);
+    let path = format!("/api/mdm/devices/{}/tags", device_uuid);
 
-    // The device tags endpoint returns a different structure
+    // Endpoint returns a top-level array of tag entries.
     let resp: serde_json::Value = client.get(&path).await?;
 
-    // Parse tags from the response
     let tags = if let Some(arr) = resp.as_array() {
         arr.iter()
             .filter_map(|v| {

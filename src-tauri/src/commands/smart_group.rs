@@ -65,71 +65,105 @@ pub async fn get_smart_group_devices(
         .collect())
 }
 
-/// Wraps `POST /api/mdm/smartgroups/{id}/update` with body
-/// `{"DeviceAdditions":[{"Id":"123"}, ...]}`.
-/// Confirmed via PyVMwareAirWatch source.
+/// Add devices to a smart group's manual additions list.
+///
+/// Per `mdmv1` spec, the only documented modification path for a smart group
+/// is `PUT /api/mdm/smartgroups/{id}` (full update). The earlier
+/// `POST /smartgroups/{id}/update` we used was from PyVMwareAirWatch — it
+/// works on some tenants but isn't in the bundled spec, so we don't rely on
+/// it. Implementation is read-modify-write:
+///   1. GET /smartgroups/{id} to get the full current state.
+///   2. Append `{Id: "<deviceId>"}` entries to `DeviceAdditions`.
+///   3. Strip server-computed count fields (`Devices`, `Assignments`,
+///      `Exclusions`) the PUT body schema doesn't accept.
+///   4. PUT it back.
 #[tauri::command]
 pub async fn add_devices_to_smart_group(
     state: State<'_, AppState>,
     smart_group_id: i64,
     device_ids: Vec<i64>,
 ) -> Result<BulkActionResult, AppError> {
-    let client = WS1Client::from_state(&state).await?;
-
-    let additions: Vec<serde_json::Value> = device_ids
-        .iter()
-        .map(|id| serde_json::json!({ "Id": id.to_string() }))
-        .collect();
-
-    let path = format!("/api/mdm/smartgroups/{}/update", smart_group_id);
-    let body = serde_json::json!({ "DeviceAdditions": additions });
-
-    let mut result = BulkActionResult {
-        total: device_ids.len() as i32,
-        accepted: 0,
-        failed: 0,
-        errors: Vec::new(),
-    };
-
-    match client.post_no_body(&path, &body).await {
-        Ok(()) => result.accepted = result.total,
-        Err(e) => {
-            result.failed = result.total;
-            result.errors.push(e.to_string());
-        }
-    }
-    Ok(result)
+    update_sg_membership(state, smart_group_id, device_ids, "DeviceAdditions").await
 }
 
-/// Wraps `POST /api/mdm/smartgroups/{id}/update` with body
-/// `{"DeviceExclusions":[{"Id":"123"}, ...]}`.
+/// Add devices to a smart group's exclusions list. Same read-modify-write
+/// flow as `add_devices_to_smart_group`, just mutating `DeviceExclusions`.
 #[tauri::command]
 pub async fn remove_devices_from_smart_group(
     state: State<'_, AppState>,
     smart_group_id: i64,
     device_ids: Vec<i64>,
 ) -> Result<BulkActionResult, AppError> {
+    update_sg_membership(state, smart_group_id, device_ids, "DeviceExclusions").await
+}
+
+async fn update_sg_membership(
+    state: State<'_, AppState>,
+    smart_group_id: i64,
+    device_ids: Vec<i64>,
+    list_field: &str,
+) -> Result<BulkActionResult, AppError> {
+    let total = device_ids.len() as i32;
+    if device_ids.is_empty() {
+        return Ok(BulkActionResult {
+            total: 0,
+            accepted: 0,
+            failed: 0,
+            errors: Vec::new(),
+        });
+    }
+
     let client = WS1Client::from_state(&state).await?;
+    let path = format!("/api/mdm/smartgroups/{}", smart_group_id);
 
-    let exclusions: Vec<serde_json::Value> = device_ids
-        .iter()
-        .map(|id| serde_json::json!({ "Id": id.to_string() }))
-        .collect();
+    // 1. Fetch current SG state. Keep raw so we round-trip every field
+    //    intact and don't drop properties the spec doesn't enumerate
+    //    (real WS1 responses sometimes include keys beyond the schema).
+    let mut sg: serde_json::Value = client.get(&path).await?;
 
-    let path = format!("/api/mdm/smartgroups/{}/update", smart_group_id);
-    let body = serde_json::json!({ "DeviceExclusions": exclusions });
+    // 2. Strip read-only count fields. The PUT body schema (per
+    //    SmartGroupEditV1Model) does not include `Devices`/`Assignments`/
+    //    `Exclusions` — sending them risks 400 on stricter tenants.
+    if let Some(obj) = sg.as_object_mut() {
+        obj.remove("Devices");
+        obj.remove("Assignments");
+        obj.remove("Exclusions");
+    }
 
+    // 3. Mutate the requested list. SmartGroupDevice.Id is a string per the
+    //    spec, so stringify the numeric ids. Skip duplicates so a re-run is
+    //    idempotent rather than producing a 400 from "device already added".
+    let arr_obj = sg
+        .get_mut(list_field)
+        .ok_or_else(|| AppError::Api(format!("SG response missing `{}` field", list_field)))?;
+    let arr = arr_obj
+        .as_array_mut()
+        .ok_or_else(|| AppError::Api(format!("`{}` is not an array", list_field)))?;
+
+    for id in &device_ids {
+        let id_str = id.to_string();
+        let already = arr.iter().any(|d| {
+            d.get("Id")
+                .and_then(|v| v.as_str())
+                .map(|s| s == id_str)
+                .unwrap_or(false)
+        });
+        if !already {
+            arr.push(serde_json::json!({ "Id": id_str }));
+        }
+    }
+
+    // 4. PUT the full body back. WS1 returns 204 on success.
     let mut result = BulkActionResult {
-        total: device_ids.len() as i32,
+        total,
         accepted: 0,
         failed: 0,
         errors: Vec::new(),
     };
-
-    match client.post_no_body(&path, &body).await {
-        Ok(()) => result.accepted = result.total,
+    match client.put_no_body(&path, &sg).await {
+        Ok(()) => result.accepted = total,
         Err(e) => {
-            result.failed = result.total;
+            result.failed = total;
             result.errors.push(e.to_string());
         }
     }

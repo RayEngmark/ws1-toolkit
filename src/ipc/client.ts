@@ -53,8 +53,12 @@ export const searchDevices = (
 ): Promise<DeviceSearchResult> =>
   ipc("search_devices", { query, searchBy, page, pageSize, ogId });
 
-export const getDeviceTags = (deviceId: number): Promise<Tag[]> =>
-  ipc("get_device_tags", { deviceId });
+/**
+ * Get tags currently applied to a device. Path uses UUID per the mdmv1
+ * spec — pass `device.uuid`, not `device.id`.
+ */
+export const getDeviceTags = (deviceUuid: string): Promise<Tag[]> =>
+  ipc("get_device_tags", { deviceUuid });
 
 // -- Tags --
 
