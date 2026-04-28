@@ -12,8 +12,16 @@ pub async fn search_devices(
     search_by: String,
     page: i32,
     page_size: i32,
+    og_id: Option<i64>,
 ) -> Result<DeviceSearchResult, AppError> {
     let client = WS1Client::from_state(&state).await?;
+
+    // Helper: append `&lgid={ogId}` when scope is set. Alternate-id lookups
+    // hit `/api/mdm/devices?searchby=…&id=…` which doesn't support `lgid`
+    // (single-record by-id), so we filter post-fetch for those.
+    let lgid_q = og_id
+        .map(|id| format!("&lgid={}", id))
+        .unwrap_or_default();
 
     // On Omnissa-rebrand tenants, /api/mdm/devices/search does NOT accept
     // searchby/id and silently ignores unknown params (returning ALL devices).
@@ -23,6 +31,12 @@ pub async fn search_devices(
     // /devices/search.
     match search_by.as_str() {
         "Serialnumber" | "Macaddress" | "Udid" | "ImeiNumber" | "EasId" | "DeviceId" => {
+            // Alt-id lookups target a specific record by global identifier and
+            // don't accept `lgid` server-side. We deliberately do NOT filter
+            // the result by scope client-side — an operator who pastes an
+            // exact ID expects a hit if the device exists in the tenant, even
+            // when the active scope happens to exclude its OG. Scope is for
+            // bulk listings; exact-id lookups are global.
             let path = format!("/api/mdm/devices?searchby={}&id={}", search_by, query);
             match client.get::<DeviceSummary>(&path).await {
                 Ok(summary) => Ok(DeviceSearchResult {
@@ -41,8 +55,8 @@ pub async fn search_devices(
         }
         "Username" => {
             let path = format!(
-                "/api/mdm/devices/search?user={}&page={}&pagesize={}",
-                query, page, page_size
+                "/api/mdm/devices/search?user={}&page={}&pagesize={}{}",
+                query, page, page_size, lgid_q
             );
             let resp: DeviceSearchResponse = client.get(&path).await?;
             let devices: Vec<Device> = resp
@@ -64,8 +78,8 @@ pub async fn search_devices(
         // way to make name lookups work on this tenant's API surface — better
         // than silently returning nothing.
         "DeviceFriendlyName" | "Assettag" => {
-            let path = "/api/mdm/devices/search?pagesize=500";
-            let resp: DeviceSearchResponse = client.get(path).await?;
+            let path = format!("/api/mdm/devices/search?pagesize=500{}", lgid_q);
+            let resp: DeviceSearchResponse = client.get(&path).await?;
             let needle = query.to_lowercase();
             let devices: Vec<Device> = resp
                 .devices

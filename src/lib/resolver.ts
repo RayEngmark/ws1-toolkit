@@ -1,5 +1,6 @@
 import * as api from "../ipc/client";
 import type { Device, IdentifierType, ResolvedRow } from "../ipc/contracts";
+import { useScopeStore } from "../state/scopeStore";
 
 /**
  * Detect the most likely identifier type from a single line of input.
@@ -61,7 +62,7 @@ export interface ResolveResult {
  * declare what it is. Six calls are alternate-id lookups (single device
  * or 404 each); one is a username filter (list).
  */
-async function fanOut(line: string): Promise<Device[]> {
+async function fanOut(line: string, ogId: number | null): Promise<Device[]> {
   const altIds = [
     "Serialnumber",
     "Macaddress",
@@ -72,12 +73,12 @@ async function fanOut(line: string): Promise<Device[]> {
   ];
   const altCalls = altIds.map((searchBy) =>
     api
-      .searchDevices(line, searchBy, 0, 1)
+      .searchDevices(line, searchBy, 0, 1, ogId)
       .then((r) => r.devices)
       .catch(() => [] as Device[])
   );
   const userCall = api
-    .searchDevices(line, "Username", 0, 50)
+    .searchDevices(line, "Username", 0, 50, ogId)
     .then((r) => r.devices)
     .catch(() => [] as Device[]);
 
@@ -87,10 +88,11 @@ async function fanOut(line: string): Promise<Device[]> {
 
 async function singleLookup(
   line: string,
-  searchBy: string
+  searchBy: string,
+  ogId: number | null
 ): Promise<Device[]> {
   try {
-    const r = await api.searchDevices(line, searchBy, 0, 50);
+    const r = await api.searchDevices(line, searchBy, 0, 50, ogId);
     return r.devices;
   } catch {
     return [];
@@ -120,6 +122,9 @@ export async function resolveLines(
 ): Promise<ResolveResult> {
   const trimmed = lines.map((l) => l.trim()).filter(Boolean);
   const unique = Array.from(new Set(trimmed));
+  // Read the active OG scope at call time so every lookup respects whatever
+  // the user has currently selected — never cached at module load.
+  const ogId = useScopeStore.getState().activeOgId;
 
   const results = await Promise.all(
     unique.map(async (line): Promise<ResolvedRow> => {
@@ -127,8 +132,8 @@ export async function resolveLines(
 
       const devices =
         override === "auto"
-          ? await fanOut(line)
-          : await singleLookup(line, OVERRIDE_TO_SEARCH_BY[override]);
+          ? await fanOut(line, ogId)
+          : await singleLookup(line, OVERRIDE_TO_SEARCH_BY[override], ogId);
 
       if (devices.length === 0) {
         return { sourceLine: line, detectedType, status: "notFound" };

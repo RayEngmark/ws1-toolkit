@@ -9,6 +9,7 @@ import type {
   Tag,
 } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { TargetPicker, type TargetItem } from "../TargetPicker/TargetPicker";
 import { Drawer } from "./Drawer";
 import { DeviceListInput } from "./DeviceListInput";
@@ -23,6 +24,7 @@ export function ApplyTagDrawer({
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [busy, setBusy] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(ctx.tagId ?? null);
@@ -31,8 +33,10 @@ export function ApplyTagDrawer({
   const mode = ctx.mode ?? "add";
 
   useEffect(() => {
-    if (!ctx.tagId) api.getTags(0).then(setTags);
-  }, [ctx.tagId]);
+    if (!ctx.tagId && activeOgId !== null) {
+      api.getTags(activeOgId).then(setTags);
+    }
+  }, [ctx.tagId, activeOgId]);
 
   const deviceIds = lockedDeviceIds ?? devices.map((d) => d.id);
   const ready = tagId !== null && deviceIds.length > 0 && !busy;

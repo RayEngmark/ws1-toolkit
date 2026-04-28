@@ -38,13 +38,20 @@ export const clearCredentials = (): Promise<void> => ipc("clear_credentials");
 
 // -- Devices --
 
+/**
+ * Search WS1 devices. `ogId` scopes the result to that OG and its descendants
+ * via the WS1 `lgid` query param — pass the active scope from `scopeStore`.
+ * Pass `null` to query the tenant globally (used internally only — every UI
+ * call should pass the current scope).
+ */
 export const searchDevices = (
   query: string,
   searchBy: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  ogId: number | null
 ): Promise<DeviceSearchResult> =>
-  ipc("search_devices", { query, searchBy, page, pageSize });
+  ipc("search_devices", { query, searchBy, page, pageSize, ogId });
 
 export const getDeviceTags = (deviceId: number): Promise<Tag[]> =>
   ipc("get_device_tags", { deviceId });

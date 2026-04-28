@@ -74,6 +74,18 @@ The user has rejected several redesigns for being "AI slop" or "SaaS dashboard."
 
 **When in doubt, mimic the existing module pages** rather than inventing new patterns.
 
+## Production data only — no mocks, no fakes
+
+Treat every code path as production. The WS1 tenant on the other end is the team's real fleet, and any value the app reads, commits, displays, or persists must come from a real WS1 API response — never hardcoded, fabricated, or filled in with a "reasonable default."
+
+Concretely:
+
+- Never hardcode an `ogId`, `tagId`, `smartGroupId`, app/profile id, etc. in an IPC call. If a value is needed and not yet loaded, render a loading state and wait.
+- Don't fall back to `0`, `""`, or `null` as if it were a valid tenant value. `getTags(0)` is a bug, not a default.
+- No demo modes, no mock fixtures shipped to runtime. Unit tests can stub — runtime cannot.
+- If a WS1 response field is missing, surface it honestly (`—`, `not reported`, blank). Never fabricate counts, names, statuses, or members.
+- On error, surface what WS1 said. Don't translate a `403 Forbidden` into "tag applied to 0 devices" or similar friendly lies — that hides real problems.
+
 ## WS1 API specifics
 
 - **Auth: OAuth 2.0 `client_credentials` only.** Basic auth was removed — do not reintroduce it.

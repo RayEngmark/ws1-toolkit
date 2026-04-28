@@ -1,0 +1,69 @@
+.hint {
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.error {
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border-left: 2px solid var(--danger);
+  color: var(--fg-0);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.muted {
+  color: var(--fg-2);
+  font-size: 12px;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--row-h);
+  padding-right: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--fg-0);
+  user-select: none;
+}
+
+.row:hover {
+  background: var(--bg-3);
+}
+
+.row.active {
+  background: var(--accent-dim);
+  box-shadow: inset 2px 0 0 var(--accent);
+  color: var(--fg-0);
+}
+
+.chev {
+  width: 16px;
+  height: var(--row-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-2);
+  flex-shrink: 0;
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
