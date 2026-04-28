@@ -11,7 +11,7 @@ The user is a Norwegian IT admin. The team owner is at tenant `as2596.awmdm.com`
 - **Zustand 5** for state, **CSS Modules** for styling
 - **framer-motion 12** (installed; used by in-progress redesign work)
 - **tauri-plugin-store** for credential persistence in the user profile
-- GitHub Actions builds Windows `.msi`, Mac `.dmg`, Linux `.deb`
+- GitHub Actions builds Windows `.msi` (the only target — macOS and Linux jobs were dropped to keep CI fast)
 
 ## Layout
 
@@ -108,7 +108,7 @@ Concretely:
 - **Type check:** `npx tsc --noEmit` (this is what CI runs as part of `npm run build`).
 - **Rust check:** `cargo check` from `src-tauri/`. There's one known-ignorable `token_type` dead-code warning.
 - **Catalog rebuild:** after editing `docs/ws1-mdm-v1-api-source.md`, run `node scripts/build-catalog.mjs` to regenerate `src/library/catalog.ts`.
-- **Cross-platform builds:** push to `main` triggers GitHub Actions; the user grabs the `.msi` from the release artifacts.
+- **Windows builds:** push to `main` triggers GitHub Actions; the user grabs the `.msi` from the release artifacts. CI only builds Windows — macOS and Linux jobs were intentionally removed.
 
 ## Open context
 
