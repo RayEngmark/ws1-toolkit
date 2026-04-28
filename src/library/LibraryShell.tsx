@@ -82,6 +82,17 @@ export function LibraryShell() {
           <span>
             {filtered.length} of {endpoints.length} endpoints · {source}
           </span>
+          <button
+            type="button"
+            className={styles.customListBtn}
+            onClick={() => {
+              setSelected(null);
+              setCustomMode(true);
+            }}
+            title="Free-form raw request — for paths the catalog doesn't cover"
+          >
+            + Custom
+          </button>
         </div>
 
         <div className={styles.list}>

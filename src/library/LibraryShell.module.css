@@ -58,7 +58,10 @@
 }
 
 .listMeta {
-  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--fg-3);
@@ -66,6 +69,24 @@
   background: var(--bg-1);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.customListBtn {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-1);
+  background: var(--bg-0);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+}
+
+.customListBtn:hover {
+  background: var(--accent);
+  color: var(--bg-0);
 }
 
 .list {
