@@ -1,5 +1,6 @@
 import { type Route, useUIStore } from "../../state/uiStore";
 import { useConnectionStore } from "../../state/connectionStore";
+import { useScopeStore } from "../../state/scopeStore";
 import {
   SettingsIcon,
   TagIcon,
@@ -7,6 +8,7 @@ import {
   DeviceIcon,
   SearchIcon,
   PlayIcon,
+  ChevronDown,
 } from "../../lib/icons";
 import styles from "./Sidebar.module.css";
 
@@ -34,7 +36,10 @@ const UTILITIES: NavItem[] = [
 export function Sidebar() {
   const activeRoute = useUIStore((s) => s.activeRoute);
   const navigate = useUIStore((s) => s.navigate);
+  const openDrawer = useUIStore((s) => s.openDrawer);
   const isConnected = useConnectionStore((s) => s.isConnected);
+  const activeOgName = useScopeStore((s) => s.activeOgName);
+  const isInitializing = useScopeStore((s) => s.isInitializing);
 
   const renderItem = (item: NavItem) => {
     const disabled = item.requiresConnection && !isConnected;
@@ -53,9 +58,28 @@ export function Sidebar() {
     );
   };
 
+  const scopeLabel = !isConnected
+    ? "not connected"
+    : isInitializing
+      ? "loading…"
+      : activeOgName ?? "—";
+  const scopeDisabled = !isConnected || isInitializing || !activeOgName;
+
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.headerBand} />
+      <button
+        className={styles.headerBand}
+        onClick={() => openDrawer("scope-picker", {})}
+        disabled={scopeDisabled}
+        title={scopeDisabled ? "Connect to WS1 first" : "Change active OG"}
+        type="button"
+      >
+        <span className={styles.headerEyebrow}>ACTIVE OG</span>
+        <span className={styles.headerRow}>
+          <span className={styles.headerName}>{scopeLabel}</span>
+          <ChevronDown size={10} />
+        </span>
+      </button>
       <div className={styles.scroll}>
         <div className={styles.section}>
           <div className={styles.navList}>{NOUNS.map(renderItem)}</div>

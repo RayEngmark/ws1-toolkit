@@ -60,6 +60,18 @@
   color: var(--fg-2);
 }
 
+.scopeBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-1);
+  font: inherit;
+}
+
+.scopeBtn:hover {
+  color: var(--fg-0);
+}
+
 .selectionPill {
   background: transparent;
   border: none;

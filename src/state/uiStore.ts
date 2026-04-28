@@ -26,7 +26,8 @@ export type DrawerKind =
   | "assign-profile"
   | "assign-app"
   | "create-tag"
-  | "delete-sg";
+  | "delete-sg"
+  | "scope-picker";
 
 export interface DrawerState {
   kind: DrawerKind;

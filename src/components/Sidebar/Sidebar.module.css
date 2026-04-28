@@ -11,6 +11,56 @@
   height: var(--header-h);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 14px;
+  background: transparent;
+  color: var(--fg-0);
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  border-radius: 0;
+  width: 100%;
+}
+
+.headerBand:hover:not(:disabled) {
+  background: var(--bg-2);
+}
+
+.headerBand:disabled {
+  cursor: not-allowed;
+  color: var(--fg-2);
+}
+
+.headerEyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--fg-2);
+  text-transform: uppercase;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.headerName {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-0);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerBand:disabled .headerName {
+  color: var(--fg-2);
 }
 
 .scroll {

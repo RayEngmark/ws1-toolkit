@@ -7,6 +7,7 @@ import {
   MoveOgDrawer,
   SmartGroupMembershipDrawer,
 } from "./forms";
+import { ScopePickerDrawer } from "./ScopePickerDrawer";
 
 /**
  * Watches uiStore.drawer; renders the right drawer form. Mounted once at the
@@ -43,5 +44,7 @@ export function DrawerHost() {
       // Not yet wired — the IPC for SG deletion isn't on the JS side. Close
       // silently rather than render a broken form.
       return null;
+    case "scope-picker":
+      return <ScopePickerDrawer />;
   }
 }

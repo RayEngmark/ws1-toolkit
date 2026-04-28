@@ -5,6 +5,7 @@ import * as api from "../../ipc/client";
 import type { BulkActionResult, Tag } from "../../ipc/contracts";
 import { useSelectionStore } from "../../state/selectionStore";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { useEntryContext } from "../../dynamic/entryContext";
 import { FooterSlot } from "../../components/AppShell/FooterSlot";
 import shared from "../_shared/ActionPage.module.css";
@@ -15,6 +16,7 @@ export function TagDevices() {
   const tagFirst = ctx?.objectKey === "tags";
   const selection = useSelectionStore((s) => s.devices);
   const clearSelection = useSelectionStore((s) => s.clear);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -22,14 +24,15 @@ export function TagDevices() {
   const addToast = useUIStore((s) => s.addToast);
 
   const loadTags = async () => {
-    if (tags.length > 0) return;
-    setTags(await api.getTags(0));
+    if (activeOgId === null) return;
+    setTags(await api.getTags(activeOgId));
   };
 
+  // Reload whenever the active OG changes — tag lists are OG-scoped.
   useEffect(() => {
     loadTags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeOgId]);
 
   const selectedTag = tags.find((t) => t.id === tagId);
   const ready = selection.length > 0 && tagId !== null;

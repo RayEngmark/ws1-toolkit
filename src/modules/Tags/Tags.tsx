@@ -2,35 +2,46 @@ import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type { OrgGroup, Tag } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { NounPage } from "../../components/NounPage/NounPage";
 import { FooterButton } from "../../components/NounPage/FooterButton";
 import { DetailGrid } from "../../components/DetailGrid/DetailGrid";
 import styles from "./Tags.module.css";
 
 /**
- * Tags are scoped to an OG. We default to the tenant root OG (the topmost
- * node returned by /groups/search) and expose a small selector to jump
- * between OGs. The list refreshes on OG change.
+ * Tags are scoped to an OG. The page seeds from the global active OG
+ * (`scopeStore`) but keeps a local override so the operator can browse
+ * tags in a different OG without changing the global scope.
  */
 export function Tags() {
+  const activeOgId = useScopeStore((s) => s.activeOgId);
   const [ogTree, setOgTree] = useState<OrgGroup[] | null>(null);
-  const [ogId, setOgId] = useState<number | null>(null);
+  const [ogId, setOgId] = useState<number | null>(activeOgId);
   const [items, setItems] = useState<Tag[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const openDrawer = useUIStore((s) => s.openDrawer);
 
-  // Load OG list on mount, default to the first root.
+  // Load OG list once. If we don't yet have an OG, seed from the active
+  // scope (preferred) or the first root as a final fallback.
   useEffect(() => {
     let cancelled = false;
     api.searchOrgGroups().then((tree) => {
       if (cancelled) return;
       setOgTree(tree);
-      if (tree.length > 0) setOgId(tree[0].id);
+      if (ogId === null && tree.length > 0) {
+        setOgId(activeOgId ?? tree[0].id);
+      }
     });
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When the global scope changes, snap the page to the new OG.
+  useEffect(() => {
+    if (activeOgId !== null) setOgId(activeOgId);
+  }, [activeOgId]);
 
   // Reload tags when the OG changes.
   useEffect(() => {

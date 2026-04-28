@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useUIStore, type Route } from "../../state/uiStore";
 import { useConnectionStore } from "../../state/connectionStore";
 import { useSelectionStore } from "../../state/selectionStore";
+import { useScopeStore } from "../../state/scopeStore";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { StatusBar } from "../StatusBar/StatusBar";
 import { ToastContainer } from "../Toast/Toast";
@@ -31,11 +32,19 @@ const ROUTE_VIEW: Record<Route, () => React.ReactElement> = {
 export function AppShell() {
   const activeRoute = useUIStore((s) => s.activeRoute);
   const loadCredentials = useConnectionStore((s) => s.loadCredentials);
+  const isConnected = useConnectionStore((s) => s.isConnected);
   const clearSelection = useSelectionStore((s) => s.clear);
+  const initScope = useScopeStore((s) => s.init);
 
   useEffect(() => {
     loadCredentials();
   }, [loadCredentials]);
+
+  // Once connected, seed the active OG from the tenant root if nothing is
+  // persisted yet. Idempotent — `init()` no-ops when scope is already set.
+  useEffect(() => {
+    if (isConnected) initScope();
+  }, [isConnected, initScope]);
 
   // Reset device selection any time the user changes routes — selection is
   // scoped to the current view session.
