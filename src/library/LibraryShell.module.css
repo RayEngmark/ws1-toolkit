@@ -439,6 +439,25 @@
   text-transform: none;
 }
 
+.copyBtn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.copyBtn:hover {
+  color: var(--fg-0);
+  border-color: var(--accent);
+}
+
 .responseBody {
   margin: 0;
   padding: 12px 14px;

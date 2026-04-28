@@ -347,12 +347,42 @@ function EndpointDetail({ endpoint }: { endpoint: CatalogEndpoint }) {
                   : `HTTP ${result.status}`}
               </span>
               <span className={styles.responseElapsed}>{result.elapsed}ms</span>
+              <CopyButton text={result.body} />
             </div>
-            <pre className={styles.responseBody}>{result.body}</pre>
+            <pre className={styles.responseBody} data-selectable>
+              {result.body}
+            </pre>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const addToast = useUIStore((s) => s.addToast);
+  const [copied, setCopied] = useState(false);
+  const onClick = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      addToast(
+        `Copy failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
+    }
+  };
+  return (
+    <button
+      className={styles.copyBtn}
+      onClick={onClick}
+      type="button"
+      title="Copy response body to clipboard"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
 

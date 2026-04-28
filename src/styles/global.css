@@ -52,7 +52,12 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--accent);
 }
 
-input, textarea, ::selection {
+/* Anything the operator might paste/copy: form fields, code blocks, and any
+ * element opted in via the [data-selectable] attribute (used by DetailGrid
+ * mono values, the Library response viewer, etc.). The global `user-select:
+ * none` on body keeps the chrome from being selectable while still letting
+ * data flow out of the app. */
+input, textarea, pre, code, [data-selectable], ::selection {
   user-select: text;
 }
 
