@@ -54,8 +54,17 @@ export function TagDevices() {
           "success"
         );
       }
-      if (result.failed > 0) addToast(`${result.failed} device(s) failed`, "error");
+      if (result.failed > 0) {
+        // Show WS1's actual error so the operator can see why it rejected.
+        const detail = result.errors[0] ? ` — ${result.errors[0]}` : "";
+        addToast(`${result.failed} device(s) failed${detail}`, "error");
+      }
       if (result.failed === 0 && result.accepted > 0) clearSelection();
+    } catch (e) {
+      addToast(
+        `Tag ${kind} failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setBusy(false);
     }

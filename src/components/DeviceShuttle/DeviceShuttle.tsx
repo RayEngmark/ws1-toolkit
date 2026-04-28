@@ -3,6 +3,7 @@ import * as api from "../../ipc/client";
 import type { Device, OrgGroup, SmartGroup } from "../../ipc/contracts";
 import { resolveLines } from "../../lib/resolver";
 import { useSelectionStore } from "../../state/selectionStore";
+import { useUIStore } from "../../state/uiStore";
 import {
   ChevronDown,
   ChevronRight,
@@ -25,6 +26,7 @@ type Source = "search" | "smartgroup" | "og";
  * No arrows, no two-column checkboxes, no second pane.
  */
 export function DeviceShuttle() {
+  const addToast = useUIStore((s) => s.addToast);
   const [source, setSource] = useState<Source>("search");
 
   // Pool (results)
@@ -72,6 +74,9 @@ export function DeviceShuttle() {
           }
         }
         setPool(devices);
+      } catch (e) {
+        setPool([]);
+        addToast(`Search failed: ${e instanceof Error ? e.message : String(e)}`, "error");
       } finally {
         setPoolLoading(false);
       }
@@ -84,13 +89,33 @@ export function DeviceShuttle() {
   // Smart Group mode
   useEffect(() => {
     if (source !== "smartgroup") return;
-    if (sgs.length === 0) api.searchSmartGroups().then(setSgs);
+    if (sgs.length === 0) {
+      api
+        .searchSmartGroups()
+        .then(setSgs)
+        .catch((e) =>
+          addToast(
+            `Smart group list failed: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          )
+        );
+    }
     if (sgId !== null) {
       setPoolLoading(true);
-      api.getSmartGroupDevices(sgId).then((devs) => {
-        setPool(devs);
-        setPoolLoading(false);
-      });
+      api
+        .getSmartGroupDevices(sgId)
+        .then((devs) => {
+          setPool(devs);
+          setPoolLoading(false);
+        })
+        .catch((e) => {
+          setPool([]);
+          setPoolLoading(false);
+          addToast(
+            `Failed to load smart group devices: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          );
+        });
     } else {
       setPool([]);
     }
@@ -100,17 +125,35 @@ export function DeviceShuttle() {
   useEffect(() => {
     if (source !== "og") return;
     if (ogTree.length === 0) {
-      api.searchOrgGroups().then((tree) => {
-        setOgTree(tree);
-        setOgExpanded(new Set(tree.map((g) => g.id)));
-      });
+      api
+        .searchOrgGroups()
+        .then((tree) => {
+          setOgTree(tree);
+          setOgExpanded(new Set(tree.map((g) => g.id)));
+        })
+        .catch((e) =>
+          addToast(
+            `Org group list failed: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          )
+        );
     }
     if (ogPickedId !== null) {
       setPoolLoading(true);
-      api.getDevicesInOg(ogPickedId).then((devs) => {
-        setPool(devs);
-        setPoolLoading(false);
-      });
+      api
+        .getDevicesInOg(ogPickedId)
+        .then((devs) => {
+          setPool(devs);
+          setPoolLoading(false);
+        })
+        .catch((e) => {
+          setPool([]);
+          setPoolLoading(false);
+          addToast(
+            `Failed to load OG devices: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          );
+        });
     } else {
       setPool([]);
     }

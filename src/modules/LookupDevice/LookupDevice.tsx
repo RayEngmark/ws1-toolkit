@@ -15,10 +15,12 @@ import {
 import shared from "../_shared/ActionPage.module.css";
 import styles from "./LookupDevice.module.css";
 import { DeviceDetail, DetailPlaceholder } from "./DeviceDetail";
+import { useUIStore } from "../../state/uiStore";
 
 type Mode = "search" | "browse-sg" | "browse-og";
 
 export function LookupDevice() {
+  const addToast = useUIStore((s) => s.addToast);
   const [mode, setMode] = useState<Mode>("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Device[]>([]);
@@ -65,6 +67,9 @@ export function LookupDevice() {
           }
         }
         setResults(devices);
+      } catch (e) {
+        setResults([]);
+        addToast(`Search failed: ${e instanceof Error ? e.message : String(e)}`, "error");
       } finally {
         setLoading(false);
       }
@@ -77,13 +82,29 @@ export function LookupDevice() {
   // Load reference data when entering browse modes
   useEffect(() => {
     if (mode === "browse-sg" && sgs.length === 0) {
-      api.searchSmartGroups().then(setSgs);
+      api
+        .searchSmartGroups()
+        .then(setSgs)
+        .catch((e) =>
+          addToast(
+            `Smart group list failed: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          )
+        );
     }
     if (mode === "browse-og" && ogTree.length === 0) {
-      api.searchOrgGroups().then((tree) => {
-        setOgTree(tree);
-        setOgExpanded(new Set(tree.map((g) => g.id)));
-      });
+      api
+        .searchOrgGroups()
+        .then((tree) => {
+          setOgTree(tree);
+          setOgExpanded(new Set(tree.map((g) => g.id)));
+        })
+        .catch((e) =>
+          addToast(
+            `Org group list failed: ${e instanceof Error ? e.message : String(e)}`,
+            "error"
+          )
+        );
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,6 +114,11 @@ export function LookupDevice() {
     try {
       const devs = await api.getSmartGroupDevices(id);
       setResults(devs);
+    } catch (e) {
+      addToast(
+        `Failed to load smart group devices: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -104,6 +130,11 @@ export function LookupDevice() {
     try {
       const devs = await api.getDevicesInOg(id);
       setResults(devs);
+    } catch (e) {
+      addToast(
+        `Failed to load OG devices: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setLoading(false);
     }

@@ -13,7 +13,17 @@ pub fn build_headers(config: &WS1Config, bearer_token: &str) -> Result<HeaderMap
             .map_err(|e| AppError::Auth(format!("Invalid API key: {}", e)))?,
     );
 
-    headers.insert(ACCEPT, HeaderValue::from_static("application/json;version=2"));
+    // WS1 endpoints disagree on which versions they expose: MDM v1/v2/v3 mostly
+    // serve `application/json;version=2`, but `/api/system/*` only declares v1
+    // in the spec. A blanket `version=2` Accept can 406 on stricter tenants for
+    // system-side calls. Send a q-weighted fallback so each endpoint can pick
+    // its preferred version without us second-guessing per call site.
+    headers.insert(
+        ACCEPT,
+        HeaderValue::from_static(
+            "application/json;version=2, application/json;version=1;q=0.9, application/json;q=0.8",
+        ),
+    );
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
     let auth_value = format!("Bearer {}", bearer_token);

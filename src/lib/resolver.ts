@@ -91,12 +91,12 @@ async function singleLookup(
   searchBy: string,
   ogId: number | null
 ): Promise<Device[]> {
-  try {
-    const r = await api.searchDevices(line, searchBy, 0, 50, ogId);
-    return r.devices;
-  } catch {
-    return [];
-  }
+  // In override mode the user has explicitly pinned an identifier type, so a
+  // 404 / 4xx / auth error is meaningful — propagate to the caller (which
+  // surfaces it as a toast). Auto/fan-out mode does its own swallowing because
+  // it expects most of the parallel calls to miss.
+  const r = await api.searchDevices(line, searchBy, 0, 50, ogId);
+  return r.devices;
 }
 
 function dedupeById(devices: Device[]): Device[] {

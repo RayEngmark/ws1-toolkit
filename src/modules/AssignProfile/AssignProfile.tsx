@@ -101,10 +101,18 @@ export function AssignProfile() {
           "success"
         );
       }
-      if (result.failed > 0) addToast(`${result.failed} failed`, "error");
+      if (result.failed > 0) {
+        const detail = result.errors[0] ? ` — ${result.errors[0]}` : "";
+        addToast(`${result.failed} failed${detail}`, "error");
+      }
       if (target === "devices" && result.failed === 0 && result.accepted > 0) {
         clearSelection();
       }
+    } catch (e) {
+      addToast(
+        `Profile assignment failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setBusy(false);
     }

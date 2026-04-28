@@ -25,13 +25,18 @@ export function Tags() {
   // scope (preferred) or the first root as a final fallback.
   useEffect(() => {
     let cancelled = false;
-    api.searchOrgGroups().then((tree) => {
-      if (cancelled) return;
-      setOgTree(tree);
-      if (ogId === null && tree.length > 0) {
-        setOgId(activeOgId ?? tree[0].id);
-      }
-    });
+    api
+      .searchOrgGroups()
+      .then((tree) => {
+        if (cancelled) return;
+        setOgTree(tree);
+        if (ogId === null && tree.length > 0) {
+          setOgId(activeOgId ?? tree[0].id);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "OG load failed");
+      });
     return () => {
       cancelled = true;
     };

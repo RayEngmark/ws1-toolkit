@@ -38,20 +38,16 @@ pub async fn search_devices(
             // when the active scope happens to exclude its OG. Scope is for
             // bulk listings; exact-id lookups are global.
             let path = format!("/api/mdm/devices?searchby={}&id={}", search_by, query);
-            match client.get::<DeviceSummary>(&path).await {
-                Ok(summary) => Ok(DeviceSearchResult {
-                    devices: vec![summary.into()],
-                    page: 0,
-                    page_size: 1,
-                    total: 1,
-                }),
-                Err(_) => Ok(DeviceSearchResult {
-                    devices: vec![],
-                    page: 0,
-                    page_size: 0,
-                    total: 0,
-                }),
-            }
+            // Propagate the WS1 error verbatim — an unknown serial returns 404
+            // with a body explaining why, and the operator needs to see that
+            // rather than a silent empty list.
+            let summary: DeviceSummary = client.get(&path).await?;
+            Ok(DeviceSearchResult {
+                devices: vec![summary.into()],
+                page: 0,
+                page_size: 1,
+                total: 1,
+            })
         }
         "Username" => {
             let path = format!(
@@ -103,12 +99,10 @@ pub async fn search_devices(
                 total,
             })
         }
-        _ => Ok(DeviceSearchResult {
-            devices: vec![],
-            page: 0,
-            page_size: 0,
-            total: 0,
-        }),
+        other => Err(AppError::Api(format!(
+            "Unsupported searchBy value: {}",
+            other
+        ))),
     }
 }
 

@@ -30,10 +30,10 @@ pub async fn get_smart_group(
 ) -> Result<Option<SmartGroup>, AppError> {
     let client = WS1Client::from_state(&state).await?;
     let path = format!("/api/mdm/smartgroups/{}", id);
-    match client.get::<crate::api::types::SmartGroupEntry>(&path).await {
-        Ok(entry) => Ok(Some(SmartGroup::from(entry))),
-        Err(_) => Ok(None),
-    }
+    let entry = client
+        .get::<crate::api::types::SmartGroupEntry>(&path)
+        .await?;
+    Ok(Some(SmartGroup::from(entry)))
 }
 
 /// Wraps `GET /api/mdm/smartgroups/{id}/devices`. Returns devices that are members

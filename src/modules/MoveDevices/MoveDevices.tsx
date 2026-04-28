@@ -71,9 +71,17 @@ export function MoveDevices() {
           "success"
         );
       }
-      if (result.failed > 0) addToast(`${result.failed} device(s) failed`, "error");
+      if (result.failed > 0) {
+        const detail = result.errors[0] ? ` — ${result.errors[0]}` : "";
+        addToast(`${result.failed} device(s) failed${detail}`, "error");
+      }
       // Clear selection on full success — stale selections after an action are confusing
       if (result.failed === 0 && result.accepted > 0) clearSelection();
+    } catch (e) {
+      addToast(
+        `Move failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setBusy(false);
     }

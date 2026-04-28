@@ -57,7 +57,15 @@ export function AssignApp() {
           "success"
         );
       }
-      if (result.failed > 0) addToast(`Assignment failed`, "error");
+      if (result.failed > 0) {
+        const detail = result.errors[0] ? ` — ${result.errors[0]}` : "";
+        addToast(`Assignment failed${detail}`, "error");
+      }
+    } catch (e) {
+      addToast(
+        `App assignment failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setBusy(false);
     }

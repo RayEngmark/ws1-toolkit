@@ -49,8 +49,16 @@ export function RemoveFromSmartGroup() {
           "success"
         );
       }
-      if (result.failed > 0) addToast(`${result.failed} device(s) failed`, "error");
+      if (result.failed > 0) {
+        const detail = result.errors[0] ? ` — ${result.errors[0]}` : "";
+        addToast(`${result.failed} device(s) failed${detail}`, "error");
+      }
       if (result.failed === 0 && result.accepted > 0) clearSelection();
+    } catch (e) {
+      addToast(
+        `Remove from smart group failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error"
+      );
     } finally {
       setBusy(false);
     }
