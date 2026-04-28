@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Opt actions/* in to Node 24 now — Node 20 is deprecated and forced-off
+# by GitHub on 2026-06-02. Catching breakage early beats a surprise CI
+# break the day before a build is needed.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: windows-latest
