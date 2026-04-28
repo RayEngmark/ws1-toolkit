@@ -69,8 +69,22 @@ pub async fn fetch_api_spec(
         candidates.push(config.spec_url.trim().to_string());
     }
     // Common fallback patterns for WS1 Swagger spec URLs.
+    // Order matters: short canonical names match what Omnissa-rebrand tenants
+    // actually serve (and what the bundled docs/specs/*.json were captured
+    // from). Older Swagger display-name patterns kept as a last-resort fallback.
     let base = config.tenant_url.trim_end_matches('/');
     for tail in [
+        // Short canonical names — these are what /api/help/Docs/<name> returns.
+        "/api/help/Docs/mdmv1",
+        "/api/help/Docs/mdmv2",
+        "/api/help/Docs/mdmv3",
+        "/api/help/Docs/mdmv4",
+        "/api/help/Docs/systemv1",
+        // Same set with .json suffix — some tenants require it.
+        "/api/help/Docs/mdmv1.json",
+        "/api/help/Docs/mdmv2.json",
+        "/api/help/Docs/systemv1.json",
+        // Legacy display-name patterns.
         "/api/help/Docs/v1/MDM%20API%20V1",
         "/API/help/Docs/v1/MDM%20API%20V1",
         "/api/help/swagger/v1/MDM%20API%20V1",
@@ -81,7 +95,10 @@ pub async fn fetch_api_spec(
         candidates.push(format!("{}{}", base, tail));
     }
 
-    let mut last_err = String::new();
+    // Track every probe so the failure message lists each URL + outcome —
+    // enough signal for the user (or future maintainer) to spot which pattern
+    // their tenant actually serves on, without having to grep the Rust source.
+    let mut attempts: Vec<String> = Vec::new();
     for url in candidates.iter() {
         let mut req = state.client.get(url);
         if let Some(tok) = token.as_ref() {
@@ -93,7 +110,7 @@ pub async fn fetch_api_spec(
             Ok(resp) => {
                 let status = resp.status();
                 if !status.is_success() {
-                    last_err = format!("{} → HTTP {}", url, status);
+                    attempts.push(format!("{} → HTTP {}", url, status));
                     continue;
                 }
                 let text = resp.text().await.unwrap_or_default();
@@ -105,23 +122,26 @@ pub async fn fetch_api_spec(
                                 spec: v,
                             });
                         } else {
-                            last_err =
-                                format!("{} → JSON had no `paths` field (not a Swagger doc)", url);
+                            attempts.push(format!(
+                                "{} → 200 but no `paths` field (not Swagger)",
+                                url
+                            ));
                         }
                     }
                     Err(e) => {
-                        last_err = format!("{} → not valid JSON: {}", url, e);
+                        attempts.push(format!("{} → 200 but not valid JSON: {}", url, e));
                     }
                 }
             }
             Err(e) => {
-                last_err = format!("{} → network error: {}", url, e);
+                attempts.push(format!("{} → network error: {}", url, e));
             }
         }
     }
 
     Err(AppError::Api(format!(
-        "Could not auto-discover the API spec. Last error: {}",
-        last_err
+        "Could not auto-discover the API spec. Tried {} URL(s):\n{}",
+        attempts.len(),
+        attempts.join("\n")
     )))
 }
