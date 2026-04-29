@@ -7,35 +7,56 @@ import { useUIStore } from "../../state/uiStore";
 import styles from "./RemoteSession.module.css";
 
 /**
- * Hosts a child Tauri Webview pointed at a Workspace ONE Assist session URL.
- * The webview is a separate browser context attached to the main window —
- * not an iframe — so X-Frame-Options on the Assist response doesn't block
- * it the way an in-React iframe would.
+ * Floating overlay that hosts a child Tauri Webview pointed at a Workspace
+ * ONE Assist session URL. The session is intentionally NOT a route — making
+ * it an overlay above the active route preserves underlying state when the
+ * operator ends the session, and a Minimize button hides the overlay
+ * (suspending the Webview, not destroying it) so the operator can pop into
+ * Devices/Profiles/etc. and resume from the status-bar pill.
  *
- * Layout: a thin header strip with the session label + close button, then
- * a placeholder div whose bounds the child webview is tracked to.
+ * Lifecycle: the Webview is created when `remoteSession.url` becomes set
+ * and destroyed only when the session ends. Minimize/restore call hide()
+ * and show() so the page state survives.
  */
-export function RemoteSession() {
-  const url = useUIStore((s) => s.remoteSessionUrl);
-  const label = useUIStore((s) => s.remoteSessionLabel);
+export function RemoteSessionOverlay() {
+  const session = useUIStore((s) => s.remoteSession);
   const endSession = useUIStore((s) => s.endRemoteSession);
+  const minimizeSession = useUIStore((s) => s.minimizeRemoteSession);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const webviewRef = useRef<Webview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Track the URL the current Webview was created for. If the operator
+  // ends a session and starts a new one, we tear the old one down before
+  // spawning the next.
+  const activeUrlRef = useRef<string | null>(null);
+
+  // Create / destroy the Webview based on whether a session URL is set.
   useEffect(() => {
-    if (!url) return;
+    const url = session?.url ?? null;
+    if (activeUrlRef.current === url) return;
+
     let disposed = false;
     let resizeObserver: ResizeObserver | null = null;
     let windowResizeListener: (() => void) | null = null;
 
+    // Tear down any existing Webview before swapping in a new session.
+    const oldWv = webviewRef.current;
+    webviewRef.current = null;
+    if (oldWv) void oldWv.close().catch(() => {});
+
+    activeUrlRef.current = url;
+    setError(null);
+    if (!url) return;
+
     const create = async () => {
+      // Wait one frame so the overlay container has laid out — without
+      // this, getBoundingClientRect can return zeroes on first render.
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || disposed) return;
       const rect = container.getBoundingClientRect();
       try {
-        // Unique label per session — Tauri rejects duplicate labels even
-        // after a previous webview was closed within the same window.
         const wvLabel = `assist-${Date.now()}`;
         const wv = new Webview(getCurrentWindow(), wvLabel, {
           url,
@@ -43,10 +64,10 @@ export function RemoteSession() {
           y: Math.round(rect.top),
           width: Math.max(1, Math.round(rect.width)),
           height: Math.max(1, Math.round(rect.height)),
-          // WebView2's default UA includes a `WebView2/...` marker that some
-          // Workspace ONE Assist relay endpoints sniff and refuse to serve.
-          // Spoof a clean Edge UA so the relay treats the session like any
-          // other browser navigation.
+          // WebView2's default UA includes a `WebView2/...` marker that
+          // some Workspace ONE Assist relays sniff and refuse to serve;
+          // a clean Edge UA gets the same response as a system-browser
+          // navigation.
           userAgent:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
         });
@@ -74,16 +95,8 @@ export function RemoteSession() {
             .catch(() => {});
         };
 
-        // Force-sync once on creation — the constructor's raw numeric bounds
-        // can be interpreted as physical pixels on some platforms; the
-        // setPosition/setSize wrappers always use Logical units. Without
-        // this, on a high-DPI display the Webview lands half-size or
-        // off-screen and the operator sees only the gray viewport.
         await sync();
 
-        // The child Webview floats above React — when the surrounding layout
-        // shifts (sidebar resize, window resize, status bar reflow) the
-        // webview must be repositioned manually or it will visibly lag.
         resizeObserver = new ResizeObserver(() => {
           void sync();
         });
@@ -108,38 +121,86 @@ export function RemoteSession() {
       webviewRef.current = null;
       if (wv) void wv.close().catch(() => {});
     };
-  }, [url]);
+  }, [session?.url]);
 
-  if (!url) {
-    return (
-      <div className={styles.empty}>
-        <span>No active remote session.</span>
-      </div>
-    );
-  }
+  // Show / hide the Webview as the overlay is minimized / restored. Hiding
+  // (rather than destroying) keeps the Assist session alive in the
+  // background.
+  useEffect(() => {
+    const wv = webviewRef.current;
+    if (!wv || !session) return;
+    if (session.minimized) {
+      void wv.hide().catch(() => {});
+    } else {
+      void wv.show().catch(() => {});
+    }
+  }, [session?.minimized, session]);
+
+  // When the overlay re-mounts (e.g. after restore), the container may
+  // have new bounds — re-sync once.
+  useEffect(() => {
+    if (!session || session.minimized) return;
+    const wv = webviewRef.current;
+    if (!wv) return;
+    const sync = async () => {
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      const c = containerRef.current;
+      if (!c) return;
+      const r = c.getBoundingClientRect();
+      await wv
+        .setPosition(new LogicalPosition(Math.round(r.left), Math.round(r.top)))
+        .catch(() => {});
+      await wv
+        .setSize(
+          new LogicalSize(
+            Math.max(1, Math.round(r.width)),
+            Math.max(1, Math.round(r.height))
+          )
+        )
+        .catch(() => {});
+    };
+    void sync();
+  }, [session?.minimized, session]);
+
+  if (!session || session.minimized) return null;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.overlay}>
       <header className={styles.head}>
         <div className={styles.title}>
           <span className={styles.titleLabel}>Remote session</span>
-          {label && <span className={styles.titleDevice}>{label}</span>}
-          <span className={styles.titleUrl} title={url}>
-            {url}
+          {session.label && (
+            <span className={styles.titleDevice}>{session.label}</span>
+          )}
+          <span className={styles.titleUrl} title={session.url}>
+            {session.url}
           </span>
         </div>
         <div className={styles.actions}>
           <button
             className={styles.fallback}
             onClick={() => {
-              void openUrl(url);
+              void openUrl(session.url);
             }}
             type="button"
-            title="Open the session URL in your default browser instead"
+            title="Open the session URL in your default browser"
           >
             Open in browser
           </button>
-          <button className={styles.close} onClick={endSession} type="button">
+          <button
+            className={styles.minimize}
+            onClick={minimizeSession}
+            type="button"
+            title="Hide overlay; the session keeps running"
+          >
+            Minimize
+          </button>
+          <button
+            className={styles.close}
+            onClick={endSession}
+            type="button"
+            title="Destroy the session"
+          >
             End session
           </button>
         </div>

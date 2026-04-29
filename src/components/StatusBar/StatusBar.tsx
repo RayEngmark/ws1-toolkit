@@ -13,7 +13,6 @@ const ROUTE_LABELS: Record<Route, string> = {
   profiles: "Profiles",
   apps: "Apps",
   "api-explorer": "API Explorer",
-  "remote-session": "Remote Session",
   settings: "Settings",
 };
 
@@ -25,6 +24,8 @@ export function StatusBar() {
   const selectionCount = useSelectionStore((s) => s.devices.length);
   const clearSelection = useSelectionStore((s) => s.clear);
   const activeOgName = useScopeStore((s) => s.activeOgName);
+  const remoteSession = useUIStore((s) => s.remoteSession);
+  const restoreRemoteSession = useUIStore((s) => s.restoreRemoteSession);
 
   const tenantHost = tenantUrl
     ? tenantUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
@@ -59,6 +60,20 @@ export function StatusBar() {
       <div className={styles.right}>
         <span className={styles.segment}>{ROUTE_LABELS[activeRoute]}</span>
         <span className={styles.spacer} />
+        {remoteSession && remoteSession.minimized && (
+          <button
+            className={`${styles.segment} ${styles.sessionPill}`}
+            onClick={restoreRemoteSession}
+            title="Restore the active remote session"
+            type="button"
+          >
+            <CircleFilled size={8} />
+            <span>
+              Session{remoteSession.label ? `: ${remoteSession.label}` : ""}
+            </span>
+            <span className={styles.clearLabel}>resume</span>
+          </button>
+        )}
         {selectionCount > 0 && (
           <button
             className={`${styles.segment} ${styles.selectionPill}`}

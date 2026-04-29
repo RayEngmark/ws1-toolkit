@@ -1,9 +1,15 @@
-.page {
-  flex: 1;
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--statusbar-h);
   display: flex;
   flex-direction: column;
-  min-height: 0;
   background: var(--bg-0);
+  z-index: 100;
+  /* Sits above sidebar + drawers so an open session occludes the rest of
+     the app — minimize before navigating. */
 }
 
 .head {
@@ -54,6 +60,23 @@
 }
 
 .fallback:hover {
+  background: var(--bg-2);
+  border-color: var(--accent);
+}
+
+.minimize {
+  height: 24px;
+  padding: 0 12px;
+  background: var(--bg-0);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.minimize:hover {
   background: var(--bg-2);
   border-color: var(--accent);
 }
@@ -110,12 +133,3 @@
   font-size: 12px;
 }
 
-.empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--fg-3);
-  font-style: italic;
-  font-size: 12px;
-}

@@ -16,7 +16,7 @@ import { Tags } from "../../modules/Tags/Tags";
 import { Profiles } from "../../modules/Profiles/Profiles";
 import { Apps } from "../../modules/Apps/Apps";
 import { LibraryShell } from "../../library/LibraryShell";
-import { RemoteSession } from "../../modules/RemoteSession/RemoteSession";
+import { RemoteSessionOverlay } from "../../modules/RemoteSession/RemoteSession";
 import styles from "./AppShell.module.css";
 
 const ROUTE_VIEW: Record<Route, () => React.ReactElement> = {
@@ -27,7 +27,6 @@ const ROUTE_VIEW: Record<Route, () => React.ReactElement> = {
   profiles: () => <Profiles />,
   apps: () => <Apps />,
   "api-explorer": () => <LibraryShell />,
-  "remote-session": () => <RemoteSession />,
   settings: () => <Settings />,
 };
 
@@ -77,6 +76,7 @@ export function AppShell() {
       <StatusBar />
       <ToastContainer />
       <DrawerHost />
+      <RemoteSessionOverlay />
     </div>
   );
 }
