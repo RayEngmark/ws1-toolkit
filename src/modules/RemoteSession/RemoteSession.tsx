@@ -43,6 +43,12 @@ export function RemoteSession() {
           y: Math.round(rect.top),
           width: Math.max(1, Math.round(rect.width)),
           height: Math.max(1, Math.round(rect.height)),
+          // WebView2's default UA includes a `WebView2/...` marker that some
+          // Workspace ONE Assist relay endpoints sniff and refuse to serve.
+          // Spoof a clean Edge UA so the relay treats the session like any
+          // other browser navigation.
+          userAgent:
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
         });
         await wv.once("tauri://created", () => {});
         if (disposed) {
