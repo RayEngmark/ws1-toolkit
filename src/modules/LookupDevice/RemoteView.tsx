@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import * as api from "../../ipc/client";
 import type { Device } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
@@ -22,6 +21,7 @@ import styles from "./RemoteView.module.css";
  */
 export function RemoteView({ device }: { device: Device }) {
   const addToast = useUIStore((s) => s.addToast);
+  const startRemoteSession = useUIStore((s) => s.startRemoteSession);
   const [busy, setBusy] = useState(false);
 
   const fire = async () => {
@@ -57,15 +57,13 @@ export function RemoteView({ device }: { device: Device }) {
         );
         return;
       }
-      try {
-        await openUrl(url);
-        addToast("Remote view session started", "success");
-      } catch (e) {
-        // If the OS launcher fails, surface the URL so the engineer can
-        // copy it manually rather than swallow the value.
-        addToast(`Open this URL manually: ${url}`, "info");
-        console.error("Failed to open URL:", e);
-      }
+      const label =
+        device.friendlyName ||
+        device.serialNumber ||
+        device.uuid ||
+        `device ${device.id}`;
+      startRemoteSession(url, label);
+      addToast("Remote view session started", "success");
     } catch (e) {
       addToast(
         e instanceof Error ? e.message : "remote view failed",

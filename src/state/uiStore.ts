@@ -12,6 +12,7 @@ export type Route =
   | "profiles"
   | "apps"
   | "api-explorer"
+  | "remote-session"
   | "settings";
 
 /**
@@ -46,11 +47,19 @@ interface UIState {
   drawer: DrawerState | null;
   /** Selected endpoint in API Explorer (catalog index). null = no selection. */
   libraryEndpointIdx: number | null;
+  /** When set, the remote-session route renders a child Webview pointed at
+   * this URL. Cleared when the operator backs out of the session. */
+  remoteSessionUrl: string | null;
+  /** Display name shown above the embedded session — typically the device's
+   * friendly name so the operator knows which machine is on the other end. */
+  remoteSessionLabel: string | null;
   toasts: Toast[];
   navigate: (route: Route) => void;
   openDrawer: (kind: DrawerKind, ctx: Record<string, unknown>) => void;
   closeDrawer: () => void;
   setLibraryEndpoint: (idx: number | null) => void;
+  startRemoteSession: (url: string, label?: string) => void;
+  endRemoteSession: () => void;
   addToast: (message: string, type: Toast["type"]) => void;
   dismissToast: (id: number) => void;
 }
@@ -61,12 +70,27 @@ export const useUIStore = create<UIState>((set) => ({
   activeRoute: "settings",
   drawer: null,
   libraryEndpointIdx: null,
+  remoteSessionUrl: null,
+  remoteSessionLabel: null,
   toasts: [],
 
   navigate: (activeRoute) => set({ activeRoute, drawer: null }),
   openDrawer: (kind, ctx) => set({ drawer: { kind, ctx } }),
   closeDrawer: () => set({ drawer: null }),
   setLibraryEndpoint: (libraryEndpointIdx) => set({ libraryEndpointIdx }),
+  startRemoteSession: (url, label) =>
+    set({
+      remoteSessionUrl: url,
+      remoteSessionLabel: label ?? null,
+      activeRoute: "remote-session",
+      drawer: null,
+    }),
+  endRemoteSession: () =>
+    set({
+      remoteSessionUrl: null,
+      remoteSessionLabel: null,
+      activeRoute: "devices",
+    }),
 
   addToast: (message, type) => {
     const id = ++toastId;

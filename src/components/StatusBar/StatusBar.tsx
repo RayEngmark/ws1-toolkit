@@ -13,6 +13,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   profiles: "Profiles",
   apps: "Apps",
   "api-explorer": "API Explorer",
+  "remote-session": "Remote Session",
   settings: "Settings",
 };
 
