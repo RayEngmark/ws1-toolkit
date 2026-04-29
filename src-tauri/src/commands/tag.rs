@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::api::client::WS1Client;
-use crate::api::types::{BulkActionResult, Tag, TagEntry, TagSearchResponse};
+use crate::api::types::{BulkActionResult, BulkResponse, Tag, TagEntry, TagSearchResponse};
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -39,25 +39,17 @@ pub async fn add_tags_to_devices(
             "Value": device_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>()
         }
     });
+    let total = device_ids.len() as i32;
 
-    let mut result = BulkActionResult {
-        total: device_ids.len() as i32,
-        accepted: 0,
-        failed: 0,
-        errors: Vec::new(),
-    };
-
-    match client.post_no_body(&path, &body).await {
-        Ok(()) => {
-            result.accepted = result.total;
-        }
-        Err(e) => {
-            result.failed = result.total;
-            result.errors.push(e.to_string());
-        }
+    match client.post::<BulkResponse>(&path, &body).await {
+        Ok(resp) => Ok(resp.into_action_result(total)),
+        Err(e) => Ok(BulkActionResult {
+            total,
+            accepted: 0,
+            failed: total,
+            errors: vec![e.to_string()],
+        }),
     }
-
-    Ok(result)
 }
 
 /// Wraps `POST /api/mdm/tags/addtag` (or PUT to /api/mdm/tags/{id} depending on
@@ -96,23 +88,15 @@ pub async fn remove_tags_from_devices(
             "Value": device_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>()
         }
     });
+    let total = device_ids.len() as i32;
 
-    let mut result = BulkActionResult {
-        total: device_ids.len() as i32,
-        accepted: 0,
-        failed: 0,
-        errors: Vec::new(),
-    };
-
-    match client.post_no_body(&path, &body).await {
-        Ok(()) => {
-            result.accepted = result.total;
-        }
-        Err(e) => {
-            result.failed = result.total;
-            result.errors.push(e.to_string());
-        }
+    match client.post::<BulkResponse>(&path, &body).await {
+        Ok(resp) => Ok(resp.into_action_result(total)),
+        Err(e) => Ok(BulkActionResult {
+            total,
+            accepted: 0,
+            failed: total,
+            errors: vec![e.to_string()],
+        }),
     }
-
-    Ok(result)
 }

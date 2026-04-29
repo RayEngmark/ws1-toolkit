@@ -210,3 +210,26 @@
   color: var(--fg-0);
   font-family: var(--font-mono);
 }
+
+.resultErrors {
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.resultErrors li {
+  padding: 4px 0;
+  color: var(--fg-1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.resultErrors li:last-child {
+  border-bottom: none;
+}

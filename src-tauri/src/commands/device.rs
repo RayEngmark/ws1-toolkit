@@ -139,24 +139,16 @@ pub async fn get_device_tags(
 
     let path = format!("/api/mdm/devices/{}/tags", device_uuid);
 
-    // Endpoint returns a top-level array of tag entries.
-    let resp: serde_json::Value = client.get(&path).await?;
-
-    let tags = if let Some(arr) = resp.as_array() {
-        arr.iter()
-            .filter_map(|v| {
-                let id = v.get("Id")?.get("Value")?.as_i64()?;
-                let name = v.get("TagName")?.as_str()?.to_string();
-                Some(crate::api::types::Tag {
-                    id,
-                    tag_name: name,
-                    device_count: 0,
-                })
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
+    // Endpoint returns a top-level array of tag entries. Round-trip through
+    // the existing TagEntry struct so the FlexId logic handles both the
+    // wrapped (`{Id: {Value: n}}`) and bare (`{Id: n}`) shapes — manually
+    // navigating only the wrapped form silently dropped every tag on
+    // tenants that returned a plain integer id.
+    let resp: Vec<crate::api::types::TagEntry> = client.get(&path).await?;
+    let tags = resp
+        .into_iter()
+        .map(crate::api::types::Tag::from)
+        .collect();
 
     Ok(tags)
 }

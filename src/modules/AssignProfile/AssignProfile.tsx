@@ -48,6 +48,7 @@ export function AssignProfile() {
   const [profileId, setProfileId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastErrors, setLastErrors] = useState<string[]>([]);
 
   const addToast = useUIStore((s) => s.addToast);
   const activeOgId = useScopeStore((s) => s.activeOgId);
@@ -77,6 +78,7 @@ export function AssignProfile() {
     if (!profileId || !ready) return;
     setBusy(true);
     setLastResult(null);
+    setLastErrors([]);
     try {
       let result: BulkActionResult;
       if (target === "devices") {
@@ -85,6 +87,7 @@ export function AssignProfile() {
         setLastResult(
           `Installed "${selectedProfile?.name}" on ${result.accepted} of ${result.total} devices`
         );
+        setLastErrors(result.errors);
         if (result.accepted > 0) {
           addToast(
             `Installed "${selectedProfile?.name}" on ${result.accepted} device(s)`,
@@ -109,10 +112,10 @@ export function AssignProfile() {
         clearSelection();
       }
     } catch (e) {
-      addToast(
-        `Profile assignment failed: ${e instanceof Error ? e.message : String(e)}`,
-        "error"
-      );
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastErrors([msg]);
+      setLastResult(`Profile assignment failed`);
+      addToast(`Profile assignment failed: ${msg}`, "error");
     } finally {
       setBusy(false);
     }
@@ -231,11 +234,20 @@ export function AssignProfile() {
           )}
 
           {lastResult && (
-            <div className={shared.result}>
+            <div
+              className={`${shared.result} ${lastErrors.length > 0 ? shared.resultErr : ""}`}
+            >
               <div className={shared.resultRow}>
                 <span className={shared.resultLabel}>Last run</span>
                 <span className={shared.resultValue}>{lastResult}</span>
               </div>
+              {lastErrors.length > 0 && (
+                <ul className={shared.resultErrors}>
+                  {lastErrors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

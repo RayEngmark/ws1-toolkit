@@ -95,3 +95,60 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Persistent result panel — surfaces WS1's per-item faults so the operator
+   can read why a bulk action failed instead of chasing a 4500ms toast. */
+.result {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-left-width: 2px;
+  background: var(--bg-1);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.resultOk {
+  border-left-color: var(--success, #4caf50);
+}
+
+.resultPartial {
+  border-left-color: var(--warning, #ffb84d);
+}
+
+.resultFail {
+  border-left-color: var(--danger, #f44336);
+}
+
+.resultHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  color: var(--fg-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.resultHeadCounts {
+  font-weight: 600;
+  color: var(--fg-0);
+}
+
+.resultErrors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.resultErrors li {
+  padding: 4px 10px;
+  color: var(--fg-1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.resultErrors li:last-child {
+  border-bottom: none;
+}

@@ -418,6 +418,66 @@ pub struct BulkActionResult {
     pub errors: Vec<String>,
 }
 
+/// WS1 bulk endpoints (e.g. `/api/mdm/tags/{id}/adddevices`) return HTTP 200
+/// even when individual items in the bulk fail. The body carries the actual
+/// per-item outcome — drop it on the floor and a wholesale rejection looks
+/// like a clean success in the UI. Mirrors `BulkResponse` from `mdmv1.json`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct BulkResponse {
+    pub total_items: Option<i32>,
+    pub accepted_items: Option<i32>,
+    pub failed_items: Option<i32>,
+    pub faults: Option<Faults>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Faults {
+    pub fault: Option<Vec<Fault>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Fault {
+    pub error_code: Option<i32>,
+    pub item_value: Option<String>,
+    pub message: Option<String>,
+    pub activity_id: Option<String>,
+}
+
+impl BulkResponse {
+    /// Project a WS1 BulkResponse onto the frontend-facing BulkActionResult.
+    /// `requested` is what we sent — used as a fallback when WS1 omits totals.
+    pub fn into_action_result(self, requested: i32) -> BulkActionResult {
+        let total = self.total_items.unwrap_or(requested);
+        let accepted = self.accepted_items.unwrap_or(0);
+        let failed = self
+            .failed_items
+            .unwrap_or_else(|| (total - accepted).max(0));
+        let errors = self
+            .faults
+            .and_then(|f| f.fault)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|f| match (f.item_value, f.error_code, f.message) {
+                (Some(item), Some(code), Some(msg)) => format!("{} [{}]: {}", item, code, msg),
+                (Some(item), None, Some(msg)) => format!("{}: {}", item, msg),
+                (None, Some(code), Some(msg)) => format!("[{}] {}", code, msg),
+                (Some(item), _, None) => item,
+                (_, _, Some(msg)) => msg,
+                _ => "unspecified WS1 fault".to_string(),
+            })
+            .collect();
+        BulkActionResult {
+            total,
+            accepted,
+            failed,
+            errors,
+        }
+    }
+}
+
 // -- Connection test --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

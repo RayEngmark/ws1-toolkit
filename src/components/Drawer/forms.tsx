@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as api from "../../ipc/client";
 import type {
   AppPushMode,
+  BulkActionResult,
   Device,
   OrgGroup,
   Profile,
@@ -29,6 +30,7 @@ export function ApplyTagDrawer({
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(ctx.tagId ?? null);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [result, setResult] = useState<BulkActionResult | null>(null);
   const lockedDeviceIds = ctx.deviceIds;
   const mode = ctx.mode ?? "add";
 
@@ -44,18 +46,30 @@ export function ApplyTagDrawer({
   const fire = async () => {
     if (!tagId) return;
     setBusy(true);
+    setResult(null);
     try {
       const res =
         mode === "remove"
           ? await api.removeTagsFromDevices(tagId, deviceIds)
           : await api.addTagsToDevices(tagId, deviceIds);
+      setResult(res);
       addToast(
         `${mode === "remove" ? "Removed" : "Applied"} tag on ${res.accepted}/${res.total} devices`,
         res.failed === 0 ? "success" : "warning"
       );
-      close();
+      // Only close on a clean run — leave the drawer open with the result
+      // panel showing on partial or full failure so the operator can read
+      // why each device was rejected.
+      if (res.failed === 0 && res.accepted === res.total) close();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : "failed", "error");
+      const msg = e instanceof Error ? e.message : String(e);
+      setResult({
+        total: deviceIds.length,
+        accepted: 0,
+        failed: deviceIds.length,
+        errors: [msg],
+      });
+      addToast(msg, "error");
     } finally {
       setBusy(false);
     }
@@ -64,7 +78,15 @@ export function ApplyTagDrawer({
   return (
     <Drawer
       title={mode === "remove" ? "Remove tag" : "Apply tag"}
-      footer={<ConfirmFooter ready={ready} busy={busy} onFire={fire} label={mode === "remove" ? "Remove tag" : "Apply tag"} />}
+      footer={
+        <ConfirmFooter
+          ready={ready}
+          busy={busy}
+          onFire={fire}
+          label={mode === "remove" ? "Remove tag" : "Apply tag"}
+          dismissLabel={result ? "Close" : "Cancel"}
+        />
+      }
     >
       {!ctx.tagId && (
         <TargetPicker
@@ -85,6 +107,7 @@ export function ApplyTagDrawer({
           <span className={styles.locked}>{lockedDeviceIds.length} selected</span>
         </FormSection>
       )}
+      {result && <BulkResultPanel result={result} verb={mode === "remove" ? "removed" : "applied"} />}
     </Drawer>
   );
 }
@@ -258,6 +281,7 @@ export function AssignProfileDrawer({
     ctx.profileId ?? null
   );
   const [devices, setDevices] = useState<Device[]>([]);
+  const [result, setResult] = useState<BulkActionResult | null>(null);
   const lockedDeviceIds = ctx.deviceIds;
 
   useEffect(() => {
@@ -290,15 +314,24 @@ export function AssignProfileDrawer({
   const fire = async () => {
     if (profileId === null) return;
     setBusy(true);
+    setResult(null);
     try {
       const res = await api.installProfileOnDevices(profileId, serials);
+      setResult(res);
       addToast(
         `Installed on ${res.accepted}/${res.total} devices`,
         res.failed === 0 ? "success" : "warning"
       );
-      close();
+      if (res.failed === 0 && res.accepted === res.total) close();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : "failed", "error");
+      const msg = e instanceof Error ? e.message : String(e);
+      setResult({
+        total: serials.length,
+        accepted: 0,
+        failed: serials.length,
+        errors: [msg],
+      });
+      addToast(msg, "error");
     } finally {
       setBusy(false);
     }
@@ -307,7 +340,15 @@ export function AssignProfileDrawer({
   return (
     <Drawer
       title="Install profile on devices"
-      footer={<ConfirmFooter ready={ready} busy={busy} onFire={fire} label="Install" />}
+      footer={
+        <ConfirmFooter
+          ready={ready}
+          busy={busy}
+          onFire={fire}
+          label="Install"
+          dismissLabel={result ? "Close" : "Cancel"}
+        />
+      }
     >
       {profileLocked ? (
         <FormSection label="Profile">
@@ -338,6 +379,7 @@ export function AssignProfileDrawer({
           </span>
         </FormSection>
       )}
+      {result && <BulkResultPanel result={result} verb="installed" />}
     </Drawer>
   );
 }
@@ -504,17 +546,19 @@ function ConfirmFooter({
   busy,
   onFire,
   label,
+  dismissLabel = "Cancel",
 }: {
   ready: boolean;
   busy: boolean;
   onFire: () => void;
   label: string;
+  dismissLabel?: string;
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   return (
     <>
       <button className={styles.cancel} onClick={close} disabled={busy}>
-        Cancel
+        {dismissLabel}
       </button>
       <button
         className={styles.primary}
@@ -524,6 +568,46 @@ function ConfirmFooter({
         {busy ? "…" : label}
       </button>
     </>
+  );
+}
+
+/**
+ * Persistent result panel for bulk actions. Shown inside the drawer body
+ * after a fire — keeps WS1's per-item fault messages on screen so the
+ * operator doesn't have to chase a toast that auto-dismisses in 4.5s.
+ */
+function BulkResultPanel({
+  result,
+  verb,
+}: {
+  result: BulkActionResult;
+  verb: string;
+}) {
+  const tone =
+    result.failed === 0 && result.accepted === result.total
+      ? styles.resultOk
+      : result.accepted === 0
+        ? styles.resultFail
+        : styles.resultPartial;
+  return (
+    <div className={`${styles.result} ${tone}`}>
+      <div className={styles.resultHead}>
+        <span>
+          {verb}{" "}
+          <span className={styles.resultHeadCounts}>
+            {result.accepted} / {result.total}
+          </span>
+        </span>
+        {result.failed > 0 && <span>{result.failed} failed</span>}
+      </div>
+      {result.errors.length > 0 && (
+        <ul className={styles.resultErrors}>
+          {result.errors.map((e, i) => (
+            <li key={i}>{e}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
