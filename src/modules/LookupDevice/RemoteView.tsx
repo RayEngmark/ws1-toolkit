@@ -40,7 +40,13 @@ export function RemoteView({ device }: { device: Device }) {
         body: {},
       });
       if (!r.ok) {
-        addToast(`Remote view failed (HTTP ${r.status})`, "error");
+        const detail = describeError(r.body);
+        addToast(
+          detail
+            ? `Remote view failed (HTTP ${r.status}) — ${detail}`
+            : `Remote view failed (HTTP ${r.status})`,
+          "error"
+        );
         return;
       }
       const url = pickSessionUrl(r.body);
@@ -88,4 +94,35 @@ function pickSessionUrl(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
   const url = (body as Record<string, unknown>).session_url;
   return typeof url === "string" && url.length > 0 ? url : null;
+}
+
+/**
+ * WS1 error responses carry the reason in shapes that vary by endpoint:
+ * `{ errorCode, message }`, `{ Message }`, `{ error_description }`, or a bare
+ * string. Surface whichever is present so the on-screen toast tells the
+ * operator the actual reason (e.g. RM error 5257 vs 5006 vs 5119) instead of
+ * a bare HTTP status.
+ */
+function describeError(body: unknown): string | null {
+  if (body == null) return null;
+  if (typeof body === "string") return body.slice(0, 240) || null;
+  if (typeof body !== "object") return null;
+  const o = body as Record<string, unknown>;
+  const code = o.errorCode ?? o.ErrorCode ?? o.error_code;
+  const msg =
+    o.message ??
+    o.Message ??
+    o.errorMessage ??
+    o.error_description ??
+    o.error;
+  const codeStr = typeof code === "number" || typeof code === "string" ? String(code) : "";
+  const msgStr = typeof msg === "string" ? msg : "";
+  if (codeStr && msgStr) return `${codeStr}: ${msgStr}`.slice(0, 240);
+  if (msgStr) return msgStr.slice(0, 240);
+  if (codeStr) return codeStr;
+  try {
+    return JSON.stringify(body).slice(0, 240);
+  } catch {
+    return null;
+  }
 }
