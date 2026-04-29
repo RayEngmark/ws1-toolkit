@@ -3,6 +3,7 @@ import {
   ApplyTagDrawer,
   AssignAppDrawer,
   AssignProfileDrawer,
+  AssignProfileToSgDrawer,
   CreateTagDrawer,
   MoveOgDrawer,
   SmartGroupMembershipDrawer,
@@ -36,6 +37,8 @@ export function DrawerHost() {
       );
     case "assign-profile":
       return <AssignProfileDrawer ctx={drawer.ctx as never} />;
+    case "assign-profile-to-sg":
+      return <AssignProfileToSgDrawer ctx={drawer.ctx as never} />;
     case "assign-app":
       return <AssignAppDrawer ctx={drawer.ctx as never} />;
     case "create-tag":

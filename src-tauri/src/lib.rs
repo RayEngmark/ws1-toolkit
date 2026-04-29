@@ -37,6 +37,9 @@ pub fn run() {
             profile::get_profiles,
             profile::install_profile_on_devices,
             profile::remove_profile_from_devices,
+            profile::get_profile_assignment,
+            profile::assign_profile_to_smart_group,
+            profile::unassign_profile_from_smart_group,
             // Apps
             app::get_apps,
             app::assign_app_to_smart_group,

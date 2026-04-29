@@ -10,11 +10,13 @@ export function FooterButton({
   onClick,
   variant = "default",
   disabled,
+  title,
 }: {
   label: string;
   onClick: () => void;
   variant?: "default" | "primary" | "danger";
   disabled?: boolean;
+  title?: string;
 }) {
   const cls =
     variant === "primary"
@@ -28,6 +30,7 @@ export function FooterButton({
       onClick={onClick}
       disabled={disabled}
       type="button"
+      title={title}
     >
       {label}
     </button>

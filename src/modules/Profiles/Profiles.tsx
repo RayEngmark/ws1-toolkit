@@ -72,15 +72,27 @@ export function Profiles() {
         />
       )}
       renderFooter={(p) => (
-        <FooterButton
-          label="Install on devices"
-          onClick={() =>
-            openDrawer("assign-profile", {
-              profileId: p.id,
-              profileName: p.name,
-            })
-          }
-        />
+        <>
+          <FooterButton
+            label="Assign to Smart Group"
+            onClick={() =>
+              openDrawer("assign-profile-to-sg", {
+                profileId: p.id,
+                profileName: p.name,
+              })
+            }
+          />
+          <FooterButton
+            label="Force-sync on devices"
+            onClick={() =>
+              openDrawer("assign-profile", {
+                profileId: p.id,
+                profileName: p.name,
+              })
+            }
+            title="Push the profile to specific devices that already belong to one of its assigned Smart Groups. Use this for ad-hoc resyncs — devices that aren't already entitled won't accept the install."
+          />
+        </>
       )}
     />
   );

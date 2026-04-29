@@ -95,6 +95,8 @@ export function AssignProfile() {
           );
         }
       } else {
+        if (sgId === null) return;
+        await api.assignProfileToSmartGroup(profileId, sgId);
         result = { total: 1, accepted: 1, failed: 0, errors: [] };
         setLastResult(
           `Profile "${selectedProfile?.name}" assigned to "${selectedSg?.name}"`

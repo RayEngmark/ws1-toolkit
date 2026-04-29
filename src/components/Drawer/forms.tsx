@@ -384,6 +384,132 @@ export function AssignProfileDrawer({
   );
 }
 
+/* -------------------- Assign profile to a Smart Group -------------------- */
+
+/**
+ * Bind a profile's assignment to a smart group via the documented
+ * `PUT /api/mdm/profiles/resources/editassignment/{id}` flow. Idempotent —
+ * re-binding an already-assigned SG is a no-op rather than a duplicate.
+ *
+ * Lock behaviour:
+ *   - smartGroupId locked → operator only picks the profile (entered from SG)
+ *   - profileId locked    → operator only picks the SG (entered from Profile)
+ */
+export function AssignProfileToSgDrawer({
+  ctx,
+}: {
+  ctx: {
+    profileId?: number;
+    profileName?: string;
+    smartGroupId?: number;
+    smartGroupName?: string;
+  };
+}) {
+  const addToast = useUIStore((s) => s.addToast);
+  const activeOgId = useScopeStore((s) => s.activeOgId);
+  const [busy, setBusy] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [sgs, setSgs] = useState<SmartGroup[]>([]);
+  const profileLocked = ctx.profileId !== undefined;
+  const sgLocked = ctx.smartGroupId !== undefined;
+  const [profileId, setProfileId] = useState<number | null>(
+    ctx.profileId ?? null
+  );
+  const [sgId, setSgId] = useState<number | null>(ctx.smartGroupId ?? null);
+  const [result, setResult] = useState<{
+    ok: boolean;
+    detail: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!profileLocked) api.getProfiles(activeOgId).then(setProfiles);
+    if (!sgLocked) api.searchSmartGroups(null).then(setSgs);
+  }, [profileLocked, sgLocked, activeOgId]);
+
+  const ready = profileId !== null && sgId !== null && !busy;
+  const profileLabel =
+    ctx.profileName ??
+    profiles.find((p) => p.id === profileId)?.name ??
+    (profileId !== null ? `Profile ${profileId}` : "");
+  const sgLabel =
+    ctx.smartGroupName ??
+    sgs.find((s) => s.id === sgId)?.name ??
+    (sgId !== null ? `Smart group ${sgId}` : "");
+
+  const fire = async () => {
+    if (profileId === null || sgId === null) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      await api.assignProfileToSmartGroup(profileId, sgId);
+      const detail = `"${profileLabel}" → "${sgLabel}"`;
+      setResult({ ok: true, detail: `Assigned ${detail}` });
+      addToast(`Assigned profile to smart group`, "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setResult({ ok: false, detail: msg });
+      addToast(msg, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Drawer
+      title="Assign profile to smart group"
+      footer={
+        <ConfirmFooter
+          ready={ready}
+          busy={busy}
+          onFire={fire}
+          label="Assign"
+          dismissLabel={result ? "Close" : "Cancel"}
+        />
+      }
+    >
+      {profileLocked ? (
+        <FormSection label="Profile">
+          <span className={styles.locked}>
+            {ctx.profileName ?? `Profile ${ctx.profileId}`}
+          </span>
+        </FormSection>
+      ) : (
+        <TargetPicker
+          label="Profile"
+          emptyHint="pick a profile"
+          items={profiles.map(toProfileItem)}
+          selectedId={profileId}
+          onSelect={setProfileId}
+        />
+      )}
+      {sgLocked ? (
+        <FormSection label="Smart group">
+          <span className={styles.locked}>
+            {ctx.smartGroupName ?? `Smart group ${ctx.smartGroupId}`}
+          </span>
+        </FormSection>
+      ) : (
+        <TargetPicker
+          label="Smart group"
+          emptyHint="pick a smart group"
+          items={sgs.map(toSgItem)}
+          selectedId={sgId}
+          onSelect={setSgId}
+        />
+      )}
+      {result && (
+        <div
+          className={`${styles.result} ${result.ok ? styles.resultOk : styles.resultFail}`}
+        >
+          <div className={styles.resultHead}>
+            <span>{result.detail}</span>
+          </div>
+        </div>
+      )}
+    </Drawer>
+  );
+}
+
 /* -------------------- Create tag -------------------- */
 
 export function CreateTagDrawer({

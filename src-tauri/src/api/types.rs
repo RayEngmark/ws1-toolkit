@@ -279,6 +279,65 @@ impl From<ProfileEntry> for Profile {
     }
 }
 
+// -- Profile assignment (Smart Group binding) --
+
+/// Inline reference to a smart group inside a profile's assignment payload —
+/// `AssignedSmartGroups` / `ExcludedSmartGroups` on `GeneralPayloadV2Entity`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct ProfileAssignedSg {
+    pub smart_group_id: Option<FlexId>,
+    pub name: Option<String>,
+}
+
+/// Top-level wrapper returned by `GET /api/mdm/profiles/{id}` — the v2 spec
+/// nests every meaningful field under `General` (the GeneralPayloadV2Entity).
+/// We only project the bits we need to round-trip an editassignment: the OG
+/// id and the current assigned/excluded smart groups.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct DeviceProfileWrapper {
+    pub general: Option<ProfileGeneral>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct ProfileGeneral {
+    pub profile_id: Option<FlexId>,
+    pub name: Option<String>,
+    pub assignment_type: Option<String>,
+    #[serde(rename = "ManagedLocationGroupID")]
+    pub managed_location_group_id: Option<i64>,
+    pub assigned_smart_groups: Option<Vec<ProfileAssignedSg>>,
+    pub excluded_smart_groups: Option<Vec<ProfileAssignedSg>>,
+}
+
+/// Body sent to `PUT /api/mdm/profiles/resources/editassignment/{id}`. Per
+/// spec this is a full *replacement* — passing only the new SG would wipe
+/// any existing assignment, so callers must merge with whatever GET returned.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ResourceAssignment {
+    pub assignment_type: String,
+    #[serde(rename = "ManagedLocationGroupID")]
+    pub managed_location_group_id: i64,
+    pub assigned_smart_groups: Vec<i64>,
+    pub excluded_smart_groups: Vec<i64>,
+}
+
+/// Lightweight projection of a profile's current SG assignments, returned
+/// to the frontend so the SG detail panel can list which profiles target it
+/// and the AssignProfileToSg drawer can show what's already bound.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileAssignment {
+    pub profile_id: i64,
+    pub assignment_type: String,
+    pub managed_og_id: i64,
+    pub assigned_sg_ids: Vec<i64>,
+    pub excluded_sg_ids: Vec<i64>,
+}
+
 // -- App types (MAM) --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

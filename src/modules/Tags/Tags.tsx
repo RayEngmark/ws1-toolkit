@@ -73,7 +73,7 @@ export function Tags() {
   return (
     <NounPage
       title="Tags"
-      subtitle="Tags scoped to the selected organization group. Read-only — actions land in the next phase."
+      subtitle="Device-level metadata. Tags attach directly to devices — Smart Groups can filter by tag in their criteria, but the tag itself isn't bound to a Smart Group."
       items={items}
       loadError={error}
       filterPlaceholder="filter by name…"

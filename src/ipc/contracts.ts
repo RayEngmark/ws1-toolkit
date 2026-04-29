@@ -140,6 +140,17 @@ export interface AppAssignmentPayload {
 
 export type ProfileTarget = "devices" | "smartgroup";
 
+/** Returned by `get_profile_assignment` — what SGs the profile currently
+ * targets, plus the OG context the assignment lives under. Used to merge
+ * a new SG into the assignment without wiping the existing list. */
+export interface ProfileAssignment {
+  profileId: number;
+  assignmentType: string;
+  managedOgId: number;
+  assignedSgIds: number[];
+  excludedSgIds: number[];
+}
+
 // -- Bulk action result --
 
 export interface BulkActionResult {

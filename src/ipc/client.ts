@@ -8,6 +8,7 @@ import type {
   DeviceSearchResult,
   OrgGroup,
   Profile,
+  ProfileAssignment,
   SmartGroup,
   Tag,
   WS1Config,
@@ -161,6 +162,25 @@ export const removeProfileFromDevices = (
   serialNumbers: string[]
 ): Promise<BulkActionResult> =>
   ipc("remove_profile_from_devices", { profileId, serialNumbers });
+
+// -- Profile ↔ Smart Group assignment --
+
+export const getProfileAssignment = (
+  profileId: number
+): Promise<ProfileAssignment> =>
+  ipc("get_profile_assignment", { profileId });
+
+export const assignProfileToSmartGroup = (
+  profileId: number,
+  smartGroupId: number
+): Promise<ProfileAssignment> =>
+  ipc("assign_profile_to_smart_group", { profileId, smartGroupId });
+
+export const unassignProfileFromSmartGroup = (
+  profileId: number,
+  smartGroupId: number
+): Promise<ProfileAssignment> =>
+  ipc("unassign_profile_from_smart_group", { profileId, smartGroupId });
 
 // -- Smart Groups --
 

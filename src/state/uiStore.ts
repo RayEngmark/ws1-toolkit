@@ -24,6 +24,7 @@ export type DrawerKind =
   | "add-to-sg"
   | "remove-from-sg"
   | "assign-profile"
+  | "assign-profile-to-sg"
   | "assign-app"
   | "create-tag"
   | "delete-sg"
