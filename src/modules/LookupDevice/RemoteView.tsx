@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import * as api from "../../ipc/client";
 import type { Device } from "../../ipc/contracts";
 import { useUIStore } from "../../state/uiStore";
@@ -11,17 +12,18 @@ import styles from "./RemoteView.module.css";
  *   POST /api/mdm/remote-management/devices/{deviceUuid}/session
  *   → { session_url: "..." }
  *
- * The engineer's browser opens the returned URL — the Assist console
- * does the rest. No destination registration needed (unlike the older
- * Apple Remote View flow). Platform-neutral — works on Windows, Android,
- * iOS, macOS as long as the device is enrolled with Assist.
+ * The session URL is opened in the operator's default browser — Assist
+ * relays sniff for non-standard browsers and refuse to render in an
+ * embedded WebView2, even with a spoofed Edge user-agent. Keeping the
+ * launch in the system browser is the only path that consistently works.
+ * Platform-neutral — works on Windows, Android, iOS, macOS as long as
+ * the device is enrolled with Assist.
  *
  * Endpoint shape verified against /api/help/Docs/mdmv1 →
  * RemoteManagementSessionResponseV1Model.
  */
 export function RemoteView({ device }: { device: Device }) {
   const addToast = useUIStore((s) => s.addToast);
-  const startRemoteSession = useUIStore((s) => s.startRemoteSession);
   const [busy, setBusy] = useState(false);
 
   const fire = async () => {
@@ -57,13 +59,13 @@ export function RemoteView({ device }: { device: Device }) {
         );
         return;
       }
-      const label =
-        device.friendlyName ||
-        device.serialNumber ||
-        device.uuid ||
-        `device ${device.id}`;
-      startRemoteSession(url, label);
-      addToast("Remote view session started", "success");
+      try {
+        await openUrl(url);
+        addToast("Remote view session started in browser", "success");
+      } catch (e) {
+        addToast(`Open this URL manually: ${url}`, "info");
+        console.error("Failed to open URL:", e);
+      }
     } catch (e) {
       addToast(
         e instanceof Error ? e.message : "remote view failed",

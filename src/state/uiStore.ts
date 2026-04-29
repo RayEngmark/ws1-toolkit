@@ -46,23 +46,11 @@ interface UIState {
   drawer: DrawerState | null;
   /** Selected endpoint in API Explorer (catalog index). null = no selection. */
   libraryEndpointIdx: number | null;
-  /** When set, an overlay floats above the active route hosting a child
-   * Webview pointed at this URL. Persists across sidebar navigation so the
-   * operator can pop into Devices/Profiles/etc. without ending the live
-   * Assist session. */
-  remoteSession: { url: string; label: string | null; minimized: boolean } | null;
   toasts: Toast[];
   navigate: (route: Route) => void;
   openDrawer: (kind: DrawerKind, ctx: Record<string, unknown>) => void;
   closeDrawer: () => void;
   setLibraryEndpoint: (idx: number | null) => void;
-  startRemoteSession: (url: string, label?: string) => void;
-  endRemoteSession: () => void;
-  /** Hide the overlay without destroying the underlying Webview, so the
-   * operator can interact with the rest of the app and resume later. */
-  minimizeRemoteSession: () => void;
-  /** Bring the overlay back over the current route. */
-  restoreRemoteSession: () => void;
   addToast: (message: string, type: Toast["type"]) => void;
   dismissToast: (id: number) => void;
 }
@@ -73,40 +61,12 @@ export const useUIStore = create<UIState>((set) => ({
   activeRoute: "settings",
   drawer: null,
   libraryEndpointIdx: null,
-  remoteSession: null,
   toasts: [],
 
-  // Sidebar navigation auto-minimizes (not ends) any active session so the
-  // operator can drop into another module and pop back without restarting.
-  navigate: (activeRoute) =>
-    set((s) => ({
-      activeRoute,
-      drawer: null,
-      remoteSession: s.remoteSession
-        ? { ...s.remoteSession, minimized: true }
-        : null,
-    })),
+  navigate: (activeRoute) => set({ activeRoute, drawer: null }),
   openDrawer: (kind, ctx) => set({ drawer: { kind, ctx } }),
   closeDrawer: () => set({ drawer: null }),
   setLibraryEndpoint: (libraryEndpointIdx) => set({ libraryEndpointIdx }),
-  startRemoteSession: (url, label) =>
-    set({
-      remoteSession: { url, label: label ?? null, minimized: false },
-      drawer: null,
-    }),
-  endRemoteSession: () => set({ remoteSession: null }),
-  minimizeRemoteSession: () =>
-    set((s) =>
-      s.remoteSession
-        ? { remoteSession: { ...s.remoteSession, minimized: true } }
-        : s
-    ),
-  restoreRemoteSession: () =>
-    set((s) =>
-      s.remoteSession
-        ? { remoteSession: { ...s.remoteSession, minimized: false } }
-        : s
-    ),
 
   addToast: (message, type) => {
     const id = ++toastId;

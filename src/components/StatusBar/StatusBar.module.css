@@ -108,23 +108,3 @@
 .selectionPill:hover .clearLabel {
   color: var(--danger);
 }
-
-.sessionPill {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--success);
-  font-weight: 500;
-}
-
-.sessionPill:hover {
-  color: var(--fg-0);
-}
-
-.sessionPill .clearLabel {
-  color: var(--fg-3);
-}
-
-.sessionPill:hover .clearLabel {
-  color: var(--accent);
-}
