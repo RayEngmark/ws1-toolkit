@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Webview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useUIStore } from "../../state/uiStore";
 import styles from "./RemoteSession.module.css";
 
@@ -67,6 +68,13 @@ export function RemoteSession() {
             .catch(() => {});
         };
 
+        // Force-sync once on creation — the constructor's raw numeric bounds
+        // can be interpreted as physical pixels on some platforms; the
+        // setPosition/setSize wrappers always use Logical units. Without
+        // this, on a high-DPI display the Webview lands half-size or
+        // off-screen and the operator sees only the gray viewport.
+        await sync();
+
         // The child Webview floats above React — when the surrounding layout
         // shifts (sidebar resize, window resize, status bar reflow) the
         // webview must be repositioned manually or it will visibly lag.
@@ -110,10 +118,25 @@ export function RemoteSession() {
         <div className={styles.title}>
           <span className={styles.titleLabel}>Remote session</span>
           {label && <span className={styles.titleDevice}>{label}</span>}
+          <span className={styles.titleUrl} title={url}>
+            {url}
+          </span>
         </div>
-        <button className={styles.close} onClick={endSession} type="button">
-          End session
-        </button>
+        <div className={styles.actions}>
+          <button
+            className={styles.fallback}
+            onClick={() => {
+              void openUrl(url);
+            }}
+            type="button"
+            title="Open the session URL in your default browser instead"
+          >
+            Open in browser
+          </button>
+          <button className={styles.close} onClick={endSession} type="button">
+            End session
+          </button>
+        </div>
       </header>
       <div className={styles.viewport} ref={containerRef}>
         {error && (

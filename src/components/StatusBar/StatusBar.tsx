@@ -39,7 +39,12 @@ export function StatusBar() {
           <CircleFilled size={8} />
           <span>{isConnected ? "Connected" : "Disconnected"}</span>
         </span>
-        <span className={styles.segment}>{tenantHost}</span>
+        <span
+          className={`${styles.segment} ${styles.tenantHost}`}
+          title={tenantHost}
+        >
+          {tenantHost}
+        </span>
         {isConnected && activeOgName && (
           <button
             className={`${styles.segment} ${styles.scopeBtn}`}

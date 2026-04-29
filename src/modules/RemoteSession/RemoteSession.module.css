@@ -22,6 +22,40 @@
   align-items: baseline;
   gap: 12px;
   min-width: 0;
+  flex: 1;
+}
+
+.titleUrl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fallback {
+  height: 24px;
+  padding: 0 12px;
+  background: var(--bg-0);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.fallback:hover {
+  background: var(--bg-2);
+  border-color: var(--accent);
 }
 
 .titleLabel {
