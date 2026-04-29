@@ -74,7 +74,12 @@ export function Profiles() {
       renderFooter={(p) => (
         <FooterButton
           label="Install on devices"
-          onClick={() => openDrawer("assign-profile", { profileId: p.id })}
+          onClick={() =>
+            openDrawer("assign-profile", {
+              profileId: p.id,
+              profileName: p.name,
+            })
+          }
         />
       )}
     />

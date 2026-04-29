@@ -241,13 +241,19 @@ export function SmartGroupMembershipDrawer({
 export function AssignProfileDrawer({
   ctx,
 }: {
-  ctx: { profileId?: number; deviceIds?: number[] };
+  ctx: {
+    profileId?: number;
+    profileName?: string;
+    deviceIds?: number[];
+    serialNumbers?: string[];
+  };
 }) {
   const close = useUIStore((s) => s.closeDrawer);
   const addToast = useUIStore((s) => s.addToast);
   const activeOgId = useScopeStore((s) => s.activeOgId);
   const [busy, setBusy] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const profileLocked = ctx.profileId !== undefined;
   const [profileId, setProfileId] = useState<number | null>(
     ctx.profileId ?? null
   );
@@ -255,8 +261,8 @@ export function AssignProfileDrawer({
   const lockedDeviceIds = ctx.deviceIds;
 
   useEffect(() => {
-    if (!ctx.profileId) api.getProfiles(activeOgId).then(setProfiles);
-  }, [ctx.profileId, activeOgId]);
+    if (!profileLocked) api.getProfiles(activeOgId).then(setProfiles);
+  }, [profileLocked, activeOgId]);
 
   // For per-device profile install we need serials. If devices were
   // resolved here (paste list), we have them. If lockedDeviceIds came
@@ -274,8 +280,7 @@ export function AssignProfileDrawer({
   }, [lockedDeviceIds]);
 
   // Caller is responsible for passing serials when locking devices.
-  const lockedSerialsFromCtx = (ctx as { serialNumbers?: string[] })
-    .serialNumbers;
+  const lockedSerialsFromCtx = ctx.serialNumbers;
   const serials =
     lockedSerialsFromCtx ??
     lockedSerials ??
@@ -283,7 +288,7 @@ export function AssignProfileDrawer({
   const ready = profileId !== null && serials.length > 0 && !busy;
 
   const fire = async () => {
-    if (!profileId) return;
+    if (profileId === null) return;
     setBusy(true);
     try {
       const res = await api.installProfileOnDevices(profileId, serials);
@@ -304,7 +309,13 @@ export function AssignProfileDrawer({
       title="Install profile on devices"
       footer={<ConfirmFooter ready={ready} busy={busy} onFire={fire} label="Install" />}
     >
-      {!ctx.profileId && (
+      {profileLocked ? (
+        <FormSection label="Profile">
+          <span className={styles.locked}>
+            {ctx.profileName ?? `Profile ${ctx.profileId}`}
+          </span>
+        </FormSection>
+      ) : (
         <TargetPicker
           label="Profile"
           emptyHint="pick a profile"

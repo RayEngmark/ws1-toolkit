@@ -238,11 +238,20 @@ pub struct ProfileSearchResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ProfileEntry {
+    // v2 `ProfileSearchResultV2Entity` carries the id as `ProfileId`. Older
+    // tenants exposed a bare `Id` (sometimes `{ Value: n }`). Accept all three
+    // so a v1-fallback tenant doesn't silently land on id=0.
+    #[serde(rename = "ProfileId", alias = "Id")]
     pub id: Option<FlexId>,
     pub profile_name: Option<String>,
     pub profile_type: Option<String>,
     pub platform: Option<String>,
+    // Not in the v2 spec at all; older surfaces did include it. Keep optional
+    // so a missing field surfaces as empty rather than failing the deser.
     pub description: Option<String>,
+    // v2 reports the owning OG as `ManagedBy`. The legacy AirWatch shape used
+    // `LocationGroupName` — keep that as an alias.
+    #[serde(rename = "ManagedBy", alias = "LocationGroupName")]
     pub location_group_name: Option<String>,
 }
 
